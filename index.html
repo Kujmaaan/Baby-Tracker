@@ -430,40 +430,88 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
   --glow-primary:0 0 28px rgba(124,58,237,.22);
 }
 .light body{background:var(--bg);}
-.light .nav-bottom{background:rgba(255,255,255,.96);border-top-color:var(--border);}
+.light .nav-bottom{background:rgba(255,255,255,.97);border-top-color:var(--border);}
 .light .card{background:var(--surface);box-shadow:var(--shadow-sm);}
 .light .set-card{background:var(--surface);box-shadow:var(--shadow-xs);}
 .light .modal{background:var(--surface);box-shadow:var(--shadow-md);}
-.light .sync-bar{background:rgba(240,237,255,.85);}
+.light .modal-overlay{background:rgba(30,27,75,.45);}
+.light .sync-bar{background:rgba(255,255,255,.9);border-color:var(--border);box-shadow:var(--shadow-xs);}
 .light .clock-box{background:var(--surface);box-shadow:var(--shadow-xs);}
 .light .stat{background:var(--surface);box-shadow:var(--shadow-xs);}
-.light .qa-btn{background:var(--surface);box-shadow:var(--shadow-xs);}
-.light .info-card{background:var(--surface2);}
+.light .qa-btn{background:var(--surface);box-shadow:var(--shadow-xs);border-color:var(--border);}
+.light .info-card{background:var(--surface);box-shadow:var(--shadow-xs);}
 .light .log-wrap{background:transparent;}
-.light .log-entry{background:var(--surface);border-left:3px solid var(--border2);}
+.light .log-entry{background:var(--surface);border-left:3px solid var(--primary-b);box-shadow:var(--shadow-xs);}
+.light .log-entry:hover{background:var(--surface2);}
 .light input,.light select,.light textarea{background:var(--surface2);color:var(--text);border-color:var(--border2);}
-.light .bar-chart{background:var(--surface2);}
+.light .bar-chart{background:var(--surface2);border-radius:var(--radius-md);padding:4px;}
+.light .bar-val{color:var(--muted);}
 .light .mehr-panel{background:var(--surface);}
-.light .mehr-btn{background:var(--surface2);}
+.light .mehr-btn{background:var(--surface2);color:var(--text);}
+.light .mehr-btn.active-page{background:var(--primary-bg);color:var(--primary);}
 .light .ob-guide-modal{background:var(--surface);}
 .light #fb-loading{background:var(--bg);}
 .light .ob-input{background:var(--surface);color:var(--text);border-color:var(--border2);}
-.light .gender-btn{background:var(--surface2);}
-.light .seg-btn{background:var(--surface2);color:var(--muted);}
-.light .seg-btn.active{background:var(--primary);color:#fff;}
+.light .gender-btn{background:var(--surface2);color:var(--text);border-color:var(--border2);}
+.light .gender-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.light .seg-btn{background:var(--surface2);color:var(--muted);border-color:var(--border2);}
+.light .seg-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
 .light .tdisp.awake{color:var(--green);}
 .light .tdisp.sleep{color:var(--blue);}
-.light .chart-tab{color:var(--hint);}
+.light .chart-tab{color:var(--hint);border-color:transparent;}
 .light .chart-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
-.light .btn{background:var(--surface3);color:var(--text);border-color:var(--border2);}
+.light .btn{background:var(--surface3);color:var(--primary);border-color:var(--border2);}
 .light .btn.bl{background:var(--blue);color:#fff;border-color:var(--blue);}
-.light .btn.pu{background:var(--purple);color:#fff;}
-.light .btn.re{background:var(--red);color:#fff;}
-.light .btn.te{background:var(--teal);color:#fff;}
-.light .btn.am{background:var(--amber);color:#fff;}
-.light .nav-bottom .nav-btn{color:var(--hint);}
+.light .btn.pu{background:var(--purple);color:#fff;border-color:var(--purple);}
+.light .btn.re{background:var(--red);color:#fff;border-color:var(--red);}
+.light .btn.te{background:var(--teal);color:#fff;border-color:var(--teal);}
+.light .btn.am{background:var(--amber);color:#fff;border-color:var(--amber);}
+.light .btn.gr{background:var(--green);color:#fff;border-color:var(--green);}
+.light .nav-bottom .nav-btn{color:rgba(30,27,75,.38);}
 .light .nav-bottom .nav-btn.active{color:var(--primary);}
 .light .mehr-overlay{background:rgba(30,27,75,.45);}
+.light .growth-item{background:var(--surface2);border-color:var(--border);}
+.light .growth-chart{background:var(--surface);box-shadow:var(--shadow-sm);}
+.light .set-label{color:var(--primary);font-weight:600;}
+.light .set-row{border-color:var(--border);}
+.light .page-title{color:var(--text);}
+.light .page-sub{color:var(--muted);}
+.light .child-chip{background:var(--surface);border-color:var(--border2);color:var(--muted);}
+.light .child-chip.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.light .log-empty{color:var(--hint);}
+.light .sdot{background:var(--green);}
+.light .tdisp{text-shadow:none;}
+.light .child-name{color:var(--text);}
+.light .child-age{color:var(--muted);}
+.light .slabel{color:var(--muted);}
+.light .who-tracked{color:var(--hint);}
+.light .clock-val{color:var(--text);}
+.light .clock-lbl{color:var(--hint);}
+.light .stat-val{color:var(--primary);}
+.light .stat-lbl{color:var(--hint);}
+.light .qa-ico{filter:none;}
+.light .qa-last{color:var(--hint);}
+.light .info-title{color:var(--text);font-weight:600;}
+.light .info-lbl{color:var(--muted);}
+.light .info-val{color:var(--text);font-weight:600;}
+.light .modal-title{color:var(--text);}
+.light .modal-lbl{color:var(--muted);}
+.light .set-row-lbl{color:var(--text);}
+.light .set-row-sub{color:var(--hint);}
+.light .sec-hdr{color:var(--primary);font-weight:600;}
+.light .age-hint{background:var(--surface2);color:var(--muted);}
+.light #theme-toggle{background:var(--surface);border-color:var(--border2);box-shadow:var(--shadow-xs);}
+.light .appt-item{border-color:var(--border);}
+.light .appt-date{color:var(--primary);}
+.light .appt-title{color:var(--text);}
+.light .notif-banner{background:linear-gradient(135deg,var(--primary),var(--blue));}
+.light .offline-badge{background:var(--red);}
+.light .slabel.sleeping{color:var(--blue);}
+.light .next-sleep{color:var(--muted);}
+.light .wf-hint{background:var(--amber-bg);border-color:var(--amber-b);color:var(--amber);}
+.light .bar-chart-wrap{background:var(--surface2);border-radius:var(--radius-md);}
+.light .sdot-sm.connected{background:var(--green);}
+.light .sdot-sm{background:var(--hint);}
 
 /* ── Theme toggle button ──────────────────────────────────── */
 #theme-toggle{
@@ -570,10 +618,58 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
 /* ── Body safe-area top padding for status bar ──────────────── */
 html{padding-top:env(safe-area-inset-top);}
 
+
+/* ── Offline badge ──────────────────────────────────────── */
+#offline-badge{
+  position:fixed;top:calc(env(safe-area-inset-top,0) + .5rem);left:.5rem;
+  background:var(--red);color:#fff;font-size:10px;font-family:var(--mono);
+  padding:.3rem .65rem;border-radius:20px;z-index:850;
+  display:none;align-items:center;gap:5px;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+#offline-badge.visible{display:flex;}
+.offline-dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.2s infinite;}
+
+/* ── Notification permission banner ─────────────────────── */
+#notif-banner{
+  margin:.5rem 1rem;padding:.85rem 1rem;
+  background:linear-gradient(135deg,var(--primary),var(--blue));
+  border-radius:var(--radius-md);color:#fff;
+  display:flex;align-items:center;gap:.75rem;
+  box-shadow:var(--shadow-sm);cursor:pointer;
+}
+#notif-banner.hidden{display:none;}
+.notif-banner-ico{font-size:22px;flex-shrink:0;}
+.notif-banner-txt{flex:1;font-size:12px;line-height:1.5;}
+.notif-banner-ttl{font-weight:700;font-size:13px;margin-bottom:2px;}
+.notif-banner-close{background:rgba(255,255,255,.2);border:none;color:#fff;
+  border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* ── WHO Growth chart ────────────────────────────────────── */
+.growth-chart-wrap{
+  margin:.5rem 1rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:1rem 1rem .5rem;box-shadow:var(--shadow-xs);
+}
+.growth-chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}
+.growth-chart-title{font-size:13px;font-weight:600;color:var(--text);}
+.growth-chart-tabs{display:flex;gap:5px;}
+.growth-chart-tab{font-size:10px;font-family:var(--mono);padding:.3rem .6rem;
+  border-radius:20px;border:1px solid var(--border2);background:none;
+  color:var(--hint);cursor:pointer;transition:all var(--t);}
+.growth-chart-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+#growth-svg{width:100%;height:auto;display:block;}
+.who-p-label{font-size:8px;fill:var(--hint);}
+.who-legend{display:flex;gap:1rem;margin-top:.5rem;flex-wrap:wrap;}
+.who-legend-item{display:flex;align-items:center;gap:.3rem;font-size:10px;font-family:var(--mono);color:var(--hint);}
+.who-legend-line{width:18px;height:2px;border-radius:1px;}
+
 </style>
 
 </head>
 <body>
+<div id="offline-badge"><span class="offline-dot"></span>Offline</div>
 <div id="fb-loading">
   <div class="fb-spinner"></div>
   <div class="fb-loading-txt">verbinde...</div>
@@ -679,6 +775,14 @@ html{padding-top:env(safe-area-inset-top);}
 <!-- ===== HOME ===== -->
 <div class="page active" id="page-home">
   <div class="child-switcher" id="child-switcher"></div>
+  <div id="notif-banner" class="hidden" onclick="doRequestNotif()">
+    <div class="notif-banner-ico">🔔</div>
+    <div class="notif-banner-txt">
+      <div class="notif-banner-ttl">Benachrichtigungen aktivieren</div>
+      Werde erinnert wenn das Baby zu lange wach ist
+    </div>
+    <button class="notif-banner-close" onclick="dismissNotifBanner(event)">✕</button>
+  </div>
   <div class="sync-bar">
     <div class="sdot-sm" id="sync-dot"></div>
     <span id="sync-label" style="flex:1">verbinde...</span>
@@ -808,6 +912,25 @@ html{padding-top:env(safe-area-inset-top);}
 <div class="page" id="page-growth">
   <div class="page-header"><div class="page-title">Wachstum</div></div>
   <button class="btn te" style="margin:.5rem 1rem;width:calc(100% - 2rem)" onclick="openGrowthModal()">+ Messung eintragen</button>
+
+  <!-- WHO Percentile Chart -->
+  <div class="growth-chart-wrap">
+    <div class="growth-chart-hdr">
+      <div class="growth-chart-title">Wachstumskurve (WHO)</div>
+      <div class="growth-chart-tabs">
+        <button class="growth-chart-tab active" onclick="switchGrowthChart('weight',this)">Gewicht</button>
+        <button class="growth-chart-tab" onclick="switchGrowthChart('height',this)">Größe</button>
+        <button class="growth-chart-tab" onclick="switchGrowthChart('head',this)">Kopf</button>
+      </div>
+    </div>
+    <svg id="growth-svg" viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="who-legend">
+      <div class="who-legend-item"><div class="who-legend-line" style="background:rgba(124,58,237,.25);border:1px dashed rgba(124,58,237,.4)"></div>3./97. Perzentile</div>
+      <div class="who-legend-item"><div class="who-legend-line" style="background:rgba(124,58,237,.5)"></div>50. Perzentile</div>
+      <div class="who-legend-item"><div class="who-legend-line" style="background:#34d399;height:3px"></div>Dein Baby</div>
+    </div>
+  </div>
+
   <div class="growth-chart" id="growth-section">
     <div class="chart-title">Einträge</div>
     <div class="growth-list" id="growth-list"><div class="log-empty">noch keine messungen</div></div>
@@ -1737,6 +1860,7 @@ function renderStatsPage(){
 
 // ── Growth ─────────────────────────────────────────────────────────────────
 function renderGrowthList(){
+  renderGrowthChart();
   const wrap=document.getElementById('growth-list');
   if(!fbGrowth.length){wrap.innerHTML='<div class="log-empty">noch keine messungen</div>';document.getElementById('qa-growth-last').textContent='—';return;}
   const latest=fbGrowth[0];
@@ -2396,6 +2520,154 @@ if('serviceWorker' in navigator){
 
 
 
+
+// ── WHO Percentile data (simplified, months 0-24) ───────────
+// [month, p3, p50, p97]
+const WHO = {
+  weight: {
+    boys:  [[0,2.5,3.3,4.4],[1,3.4,4.5,5.8],[2,4.3,5.6,7.1],[3,5.0,6.4,8.0],[4,5.6,7.0,8.7],[5,6.0,7.5,9.3],[6,6.4,7.9,9.8],[9,7.1,8.9,11.0],[12,7.7,9.6,11.9],[18,8.8,10.9,13.5],[24,9.7,12.0,14.9]],
+    girls: [[0,2.4,3.2,4.2],[1,3.2,4.2,5.5],[2,4.0,5.1,6.6],[3,4.6,5.8,7.5],[4,5.1,6.4,8.2],[5,5.5,6.9,8.8],[6,5.8,7.3,9.3],[9,6.4,8.2,10.4],[12,7.0,8.9,11.5],[18,7.8,10.2,13.2],[24,8.7,11.5,14.9]]
+  },
+  height: {
+    boys:  [[0,46.1,49.9,53.7],[1,51.1,54.7,58.4],[2,54.7,58.4,62.2],[3,57.3,61.4,65.5],[4,59.7,63.9,68.0],[6,63.3,67.6,71.9],[9,68.0,72.3,76.9],[12,71.7,75.7,81.2],[18,77.5,82.3,87.7],[24,82.3,87.8,93.7]],
+    girls: [[0,45.4,49.1,52.9],[1,49.8,53.7,57.6],[2,53.0,57.1,61.1],[3,55.6,59.8,64.0],[4,57.8,62.1,66.4],[6,61.2,65.7,70.2],[9,65.6,70.1,75.0],[12,69.2,74.0,79.2],[18,75.0,80.7,86.4],[24,80.0,86.4,92.9]]
+  },
+  head: {
+    boys:  [[0,32.1,34.5,36.9],[1,35.1,37.3,39.4],[2,37.0,39.1,41.2],[3,38.6,40.5,42.4],[4,39.7,41.6,43.5],[6,41.5,43.3,45.1],[9,43.5,45.3,47.1],[12,44.9,46.8,48.6],[18,46.5,48.4,50.3],[24,47.6,49.5,51.4]],
+    girls: [[0,31.7,33.9,36.1],[1,34.3,36.5,38.7],[2,36.0,38.3,40.5],[3,37.5,39.5,41.5],[4,38.6,40.6,42.6],[6,40.2,42.2,44.2],[9,42.0,44.0,46.0],[12,43.5,45.6,47.6],[18,45.1,47.2,49.3],[24,46.1,48.3,50.4]]
+  }
+};
+
+let growthChartMode = 'weight';
+
+function switchGrowthChart(mode, btn) {
+  growthChartMode = mode;
+  document.querySelectorAll('.growth-chart-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrowthChart();
+}
+
+function renderGrowthChart() {
+  const svg = document.getElementById('growth-svg');
+  if (!svg) return;
+  const ch = activeChild();
+  const gender = ch?.gender === 'female' ? 'girls' : 'boys';
+  const who = WHO[growthChartMode][gender];
+  const W = 300, H = 160, PL = 32, PR = 8, PT = 8, PB = 24;
+  const cW = W - PL - PR, cH = H - PT - PB;
+
+  // Value range from WHO data
+  const allVals = who.flatMap(([,p3,,p97]) => [p3, p97]);
+  let vMin = Math.min(...allVals), vMax = Math.max(...allVals);
+  const vPad = (vMax - vMin) * 0.08;
+  vMin -= vPad; vMax += vPad;
+  const maxM = 24;
+
+  const xS = m => PL + (m / maxM) * cW;
+  const yS = v => PT + cH - ((v - vMin) / (vMax - vMin)) * cH;
+
+  const polyline = pts => pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const unitMap = { weight: 'kg', height: 'cm', head: 'cm' };
+  const unit = unitMap[growthChartMode];
+
+  // Baby measurements
+  const babyMeasures = fbGrowth
+    .filter(g => {
+      if (growthChartMode === 'weight') return g.weight > 0;
+      if (growthChartMode === 'height') return g.height > 0;
+      return g.head > 0;
+    })
+    .map(g => {
+      const bday = ch?.bday ? new Date(ch.bday) : null;
+      const ageM = bday ? (g.ts - bday.getTime()) / (30.44 * 86400000) : null;
+      const val = growthChartMode === 'weight' ? g.weight / 1000 :
+                  growthChartMode === 'height' ? g.height : g.head;
+      return ageM !== null ? { m: Math.max(0, Math.min(24, ageM)), v: val } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.m - b.m);
+
+  // Y-axis labels
+  const yLabels = [];
+  const nYLbls = 4;
+  for (let i = 0; i <= nYLbls; i++) {
+    const v = vMin + (vMax - vMin) * (i / nYLbls);
+    const y = yS(v);
+    yLabels.push(`<text x="${PL - 3}" y="${y + 3}" text-anchor="end" class="who-p-label" fill="var(--hint)">${
+      growthChartMode === 'weight' ? v.toFixed(1) : Math.round(v)
+    }</text>`);
+    yLabels.push(`<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>`);
+  }
+
+  // X-axis labels
+  const xTicks = [0,3,6,9,12,18,24];
+  const xLabels = xTicks.map(m =>
+    `<text x="${xS(m)}" y="${H - 5}" text-anchor="middle" class="who-p-label" fill="var(--hint)">${m}M</text>`
+  );
+
+  // WHO percentile curves
+  const p3pts = who.map(([m,p3]) => [xS(m), yS(p3)]);
+  const p50pts = who.map(([m,,p50]) => [xS(m), yS(p50)]);
+  const p97pts = who.map(([m,,,p97]) => [xS(m), yS(p97)]);
+
+  const whoLines = `
+    <polyline points="${polyline(p3pts)}" fill="none" stroke="rgba(124,58,237,.22)" stroke-width="1" stroke-dasharray="3,2"/>
+    <polyline points="${polyline(p50pts)}" fill="none" stroke="rgba(124,58,237,.45)" stroke-width="1.5"/>
+    <polyline points="${polyline(p97pts)}" fill="none" stroke="rgba(124,58,237,.22)" stroke-width="1" stroke-dasharray="3,2"/>`;
+
+  // Baby line + dots
+  let babyLine = '';
+  if (babyMeasures.length > 1) {
+    const bpts = babyMeasures.map(({m,v}) => [xS(m), yS(v)]);
+    babyLine = `<polyline points="${polyline(bpts)}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"/>`;
+  }
+  const babyDots = babyMeasures.map(({m,v}) =>
+    `<circle cx="${xS(m).toFixed(1)}" cy="${yS(v).toFixed(1)}" r="3.5" fill="var(--green)" stroke="var(--surface)" stroke-width="1.5"/>
+     <title>${v.toFixed(growthChartMode==='weight'?2:1)} ${unit} (${Math.round(m)} Mo)</title>`
+  ).join('');
+
+  svg.innerHTML = `
+    ${yLabels.join('')}
+    ${xLabels.join('')}
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+cH}" stroke="var(--border2)" stroke-width="1"/>
+    <line x1="${PL}" y1="${PT+cH}" x2="${W-PR}" y2="${PT+cH}" stroke="var(--border2)" stroke-width="1"/>
+    ${whoLines}
+    ${babyLine}
+    ${babyDots}
+    ${babyMeasures.length === 0 ? `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="var(--hint)" font-size="10" font-family="var(--mono)">Noch keine Messungen</text>` : ''}
+  `;
+}
+
+// ── Offline detection ────────────────────────────────────────
+function updateOnlineStatus() {
+  const badge = document.getElementById('offline-badge');
+  if (badge) badge.classList.toggle('visible', !navigator.onLine);
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// ── Notification permission banner ──────────────────────────
+function showNotifBannerIfNeeded() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') return;
+  if (Notification.permission === 'denied') return;
+  if (localStorage.getItem('bt-notif-dismissed')) return;
+  const banner = document.getElementById('notif-banner');
+  if (banner) banner.classList.remove('hidden');
+}
+async function doRequestNotif() {
+  await requestNotifPermission();
+  const banner = document.getElementById('notif-banner');
+  if (banner) banner.classList.add('hidden');
+  localStorage.setItem('bt-notif-dismissed', '1');
+}
+function dismissNotifBanner(e) {
+  e.stopPropagation();
+  const banner = document.getElementById('notif-banner');
+  if (banner) banner.classList.add('hidden');
+  localStorage.setItem('bt-notif-dismissed', '1');
+}
+
 // ── Mehr bottom sheet ────────────────────────────────────────
 function openMehr(){
   const s=document.getElementById('mehr-sheet');
@@ -2603,7 +2875,9 @@ if('Notification' in window && Notification.permission==='granted'){
   fbAppts.forEach(scheduleApptNotif);
 }
 renderAppts();
+updateOnlineStatus();
 startClock();
+setTimeout(showNotifBannerIfNeeded, 2000);
 </script>
 
 <!-- FIX SLEEP START MODAL -->
