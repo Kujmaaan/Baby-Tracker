@@ -330,6 +330,11 @@ select.set-input{cursor:pointer}
 .toast{position:fixed;bottom:2.2rem;left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface3);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 18px;font-size:12px;font-family:var(--mono);color:var(--text);opacity:0;pointer-events:none;transition:all .22s cubic-bezier(.4,0,.2,1);white-space:nowrap;z-index:300;box-shadow:var(--shadow-md),var(--glow-primary)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* ── Child Settings List ── */
+.child-row-settings{cursor:pointer;transition:background var(--t);border-radius:8px}
+.child-row-settings:hover{background:rgba(139,92,246,.07)}
+.child-active{background:rgba(139,92,246,.08)!important;border-left:3px solid var(--primary)}
+
 /* ── SCROLLBARS ── */
 *{scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -512,6 +517,24 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
     <div class="stat"><div class="stat-val" id="avg-diaper">0</div><div class="stat-lbl">Ø Windeln/Tag</div></div>
     <div class="stat"><div class="stat-val" id="longest-sleep">0h</div><div class="stat-lbl">längster Schlaf</div></div>
   </div>
+  <!-- Weekly Summary Table -->
+  <div class="set-section" style="padding:0 1rem 1rem">
+    <div class="set-label">Woche im Detail</div>
+    <div class="set-card" id="weekly-table" style="overflow-x:auto;padding:0">
+      <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2)">
+            <th style="padding:8px 10px;text-align:left;color:var(--hint);font-weight:400">Tag</th>
+            <th style="padding:8px 8px;text-align:center;color:var(--hint);font-weight:400">🌙 Schlaf</th>
+            <th style="padding:8px 8px;text-align:center;color:var(--hint);font-weight:400">🍼 Mahl.</th>
+            <th style="padding:8px 8px;text-align:center;color:var(--hint);font-weight:400">👶 Wind.</th>
+          </tr>
+        </thead>
+        <tbody id="weekly-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="export-row">
     <button class="btn te" onclick="exportCSV()">📄 Export CSV</button>
     <button class="btn am" onclick="exportPDF()">🖨 Export PDF</button>
@@ -521,6 +544,15 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
 <!-- ===== VERLAUF ===== -->
 <div class="page" id="page-history">
   <div class="page-header"><div class="page-title">Verlauf</div><div class="page-sub" id="hist-sub">alle einträge</div></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 1rem .8rem;gap:8px">
+    <button class="btn" id="hist-prev" onclick="histNav(-1)" style="padding:8px 14px;font-size:16px;min-width:44px">←</button>
+    <div style="text-align:center;flex:1">
+      <div id="hist-date-label" style="font-size:13px;font-family:var(--mono);color:var(--text);font-weight:500">Alle Tage</div>
+      <div id="hist-filter-hint" style="font-size:10px;color:var(--hint);font-family:var(--mono);margin-top:2px"></div>
+    </div>
+    <button class="btn" id="hist-next" onclick="histNav(1)" style="padding:8px 14px;font-size:16px;min-width:44px">→</button>
+    <button class="btn" id="hist-today" onclick="histGoToday()" style="padding:8px 12px;font-size:11px;font-family:var(--mono)">Heute</button>
+  </div>
   <div class="log-wrap" style="margin:0 1rem" id="hist-log"><div class="log-empty">noch keine einträge</div></div>
 </div>
 
@@ -638,7 +670,13 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
   </div>
 
   <div class="set-section">
-    <div class="set-label">Kind</div>
+    <div class="set-label">Kinder</div>
+    <div class="set-card" id="children-list-settings"></div>
+    <div style="padding:0 1rem .2rem"><button class="btn" style="width:100%;font-size:12px" onclick="addChild()">+ Kind hinzufügen</button></div>
+  </div>
+
+  <div class="set-section">
+    <div class="set-label">Aktives Kind bearbeiten</div>
     <div class="set-card">
       <div class="set-row"><div><div class="set-row-lbl">Name</div></div><input class="set-input" type="text" id="set-childname" maxlength="20" oninput="saveSettings()"></div>
       <div class="set-row">
@@ -989,12 +1027,12 @@ async function removeGrowth(key){
 window.doSleep=async()=>{
   if(S.sleeping)return;
   if(S.start)await pushLog({type:'awake',start:S.start,end:Date.now(),dur:Date.now()-S.start,by:CFG.who});
-  await writeState(true,Date.now());toast('Gute Nacht '+(activeChild()?.name||'')+'🌙');
+  await writeState(true,Date.now());scheduleNotifs();toast('Gute Nacht '+(activeChild()?.name||'')+'🌙');
 };
 window.doWake=async()=>{
   if(!S.sleeping)return;
   if(S.start)await pushLog({type:'sleep',start:S.start,end:Date.now(),dur:Date.now()-S.start,by:CFG.who});
-  await writeState(false,Date.now());toast('Guten Morgen '+(activeChild()?.name||'')+'☀️');
+  await writeState(false,Date.now());scheduleNotifs();toast('Guten Morgen '+(activeChild()?.name||'')+'☀️');
 };
 window.delEntry=async key=>{if(!confirm('Eintrag löschen?'))return;await removeLog(key);};
 
@@ -1177,6 +1215,7 @@ function buildEntry(e){
 
 // ── Render Home ────────────────────────────────────────────────────────────
 function renderHome(){
+  scheduleNotifs();
   const c=activeChild(),sl=S.sleeping;
   const gd=GENDER_MAP[c?.gender||'none'];
   document.getElementById('child-avatar').className='child-avatar '+(gd?.cls||'none');
@@ -1214,6 +1253,13 @@ function renderChildSwitcher(){
 window.switchChild=id=>{
   CFG.activeChildId=id;saveCfg();
   initFB();renderHome();
+};
+window.switchChildSettings=id=>{
+  if(CFG.activeChildId===id){return;}
+  CFG.activeChildId=id;saveCfg();
+  initFB();renderHome();renderSettingsUI();
+  const name=CFG.children.find(c=>c.id===id)?.name||'Kind';
+  toast(name+' ist jetzt aktiv ✓');
 };
 window.addChild=()=>{
   const name=prompt('Name des Kindes:');if(!name)return;
@@ -1253,14 +1299,83 @@ function renderTodayLog(){
   }).join('');
 }
 
+// ── History date state ──────────────────────────────────────────
+let histOffset=0; // 0=today, -1=yesterday, null=all
+
+function histNav(dir){
+  if(histOffset===null)histOffset=-1;
+  else histOffset+=dir;
+  // Clamp: can't go into future beyond today
+  if(histOffset>0)histOffset=0;
+  renderHistory();
+}
+window.histGoToday=function(){histOffset=0;renderHistory();};
+
 function renderHistory(){
   const wrap=document.getElementById('hist-log');
-  if(!fbLog.length){wrap.innerHTML='<div class="log-empty">noch keine einträge</div>';document.getElementById('hist-sub').textContent='keine einträge';return;}
+  const dateLbl=document.getElementById('hist-date-label');
+  const filterHint=document.getElementById('hist-filter-hint');
+  const prevBtn=document.getElementById('hist-prev');
+  const nextBtn=document.getElementById('hist-next');
+
+  if(!fbLog.length){
+    wrap.innerHTML='<div class="log-empty">noch keine einträge</div>';
+    document.getElementById('hist-sub').textContent='keine einträge';
+    if(dateLbl)dateLbl.textContent='Alle Tage';
+    return;
+  }
+
+  // Build all day groups
   const groups={};
   fbLog.forEach(e=>{const k=new Date(e.start).toDateString();if(!groups[k])groups[k]={ts:e.start,entries:[]};groups[k].entries.push(e);});
-  const keys=Object.keys(groups).sort((a,b)=>new Date(b)-new Date(a));
-  document.getElementById('hist-sub').textContent=keys.length+' '+(keys.length===1?'tag':'tage')+' · '+fbLog.length+' einträge';
-  wrap.innerHTML=keys.map(k=>{
+  const allKeys=Object.keys(groups).sort((a,b)=>new Date(b)-new Date(a));
+
+  // Filter by selected day offset
+  let filteredKeys=allKeys;
+  let showingAll=false;
+  if(histOffset===null){
+    showingAll=true;
+  } else {
+    const targetDate=new Date();
+    targetDate.setDate(targetDate.getDate()+histOffset);
+    targetDate.setHours(0,0,0,0);
+    const targetKey=targetDate.toDateString();
+    filteredKeys=allKeys.filter(k=>k===targetKey);
+  }
+
+  // Update navigation UI
+  if(dateLbl){
+    if(histOffset===null||showingAll){
+      dateLbl.textContent='Alle Tage';
+    } else if(histOffset===0){
+      dateLbl.textContent='Heute';
+    } else if(histOffset===-1){
+      dateLbl.textContent='Gestern';
+    } else {
+      const d=new Date();d.setDate(d.getDate()+histOffset);
+      dateLbl.textContent=d.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+    }
+  }
+  if(filterHint){
+    if(filteredKeys.length===0){filterHint.textContent='keine Einträge';}
+    else{const cnt=filteredKeys.reduce((s,k)=>s+groups[k].entries.length,0);filterHint.textContent=cnt+' Einträge';}
+  }
+  if(nextBtn)nextBtn.disabled=histOffset>=0;
+  if(prevBtn){
+    // Disable prev if we're already at the oldest day
+    const oldestKey=allKeys[allKeys.length-1];
+    const oldestDate=new Date(oldestKey);
+    const targetDate=new Date();targetDate.setDate(targetDate.getDate()+(histOffset||0));
+    prevBtn.disabled=histOffset!==null&&targetDate<=oldestDate;
+  }
+  document.getElementById('hist-sub').textContent=allKeys.length+' '+(allKeys.length===1?'tag':'tage') +' · '+fbLog.length+' gesamt';
+
+  if(filteredKeys.length===0){
+    wrap.innerHTML='<div class="log-empty">keine Einträge für diesen Tag</div>';
+    return;
+  }
+
+  wrap.innerHTML=filteredKeys.map(k=>{
     const g=groups[k];
     const daySl=g.entries.filter(e=>e.type==='sleep').reduce((s,e)=>s+(e.dur||0),0);
     const dayStats=daySl>0?'Schlaf: '+fmtShort(daySl):'';
@@ -1305,6 +1420,28 @@ function renderStatsPage(){
   document.getElementById('avg-feed').textContent=avgFd.toFixed(1);
   document.getElementById('avg-diaper').textContent=avgDp.toFixed(1);
   document.getElementById('longest-sleep').textContent=f(longest)||'0h';
+
+  // Weekly detail table
+  const tbody=document.getElementById('weekly-table-body');
+  if(tbody){
+    const today=new Date();today.setHours(0,0,0,0);
+    tbody.innerHTML=buckets.map(b=>{
+      const d=new Date(b.ts);
+      const isToday=d.toDateString()===today.toDateString();
+      const isYest=d.toDateString()===new Date(today.getTime()-86400000).toDateString();
+      const dayLbl=isToday?'Heute':isYest?'Gestern':d.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'2-digit'});
+      const slLbl=b.sleep>0?f(b.sleep):'—';
+      const feedLbl=b.feed>0?b.feed+'×':'—';
+      const diaperLbl=b.diaper>0?b.diaper+'×':'—';
+      const rowStyle=isToday?'background:rgba(139,92,246,.08);':'';
+      return`<tr style="border-bottom:1px solid var(--border);${rowStyle}">
+        <td style="padding:7px 10px;color:${isToday?'var(--primary-light)':'var(--text)'};font-weight:${isToday?'500':'400'}">${dayLbl}</td>
+        <td style="padding:7px 8px;text-align:center;color:var(--blue)">${slLbl}</td>
+        <td style="padding:7px 8px;text-align:center;color:var(--green)">${feedLbl}</td>
+        <td style="padding:7px 8px;text-align:center;color:var(--muted)">${diaperLbl}</td>
+      </tr>`;
+    }).join('');
+  }
 }
 
 // ── Growth ─────────────────────────────────────────────────────────────────
@@ -1400,6 +1537,28 @@ window.exportPDF=()=>{
 // ── Settings ───────────────────────────────────────────────────────────────
 function renderSettingsUI(){
   const c=activeChild();
+  // Render children list with active indicator
+  const clWrap=document.getElementById('children-list-settings');
+  if(clWrap){
+    if(!CFG.children.length){
+      clWrap.innerHTML='<div style="padding:.8rem 1rem;font-size:12px;color:var(--hint);font-family:var(--mono)">Noch kein Kind angelegt</div>';
+    } else {
+      clWrap.innerHTML=CFG.children.map((ch,i)=>{
+        const gd=GENDER_MAP[ch.gender||'none'];
+        const isActive=ch.id===CFG.activeChildId||(i===0&&!CFG.activeChildId);
+        const age=ageExact(ch.bday)||'Alter unbekannt';
+        return`<div class="set-row child-row-settings${isActive?' child-active':''}" onclick="switchChildSettings('${ch.id}')">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:22px;line-height:1">${gd?.ico||'👶'}</span>
+            <div><div class="set-row-lbl">${ch.name||'—'}</div><div class="set-row-sub">${age}</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${isActive?'<span style="font-size:11px;font-family:var(--mono);color:var(--primary);background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:3px 9px">aktiv ✓</span>':'<span style="font-size:11px;font-family:var(--mono);color:var(--hint)">auswählen</span>'}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
   const sel=document.getElementById('set-who');
   sel.innerHTML=[CFG.p1,CFG.p2].filter(Boolean).map(n=>`<option value="${n}"${n===CFG.who?' selected':''}>${n}</option>`).join('');
   document.getElementById('set-childname').value=c?.name||'';
@@ -1868,7 +2027,7 @@ window.saveFixStart=async function(){
   if(dayVal==='yesterday')newStart.setDate(newStart.getDate()-1);
   newStart.setHours(h,m,0,0);
   if(newStart.getTime()>Date.now()){toast('Zeitpunkt liegt in der Zukunft');return;}
-  await writeState(true,newStart.getTime());
+  await writeState(true,newStart.getTime());scheduleNotifs();
   closeModal('fix-start-modal');
   toast('Schlafbeginn korrigiert ✓');
 };

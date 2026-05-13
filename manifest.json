@@ -1,17 +1,23 @@
 {
   "name": "Baby Tracker",
-  "short_name": "Baby",
-  "description": "Baby-Tracking für Eltern — Schlaf, Mahlzeiten, Wachstum",
+  "short_name": "BabyTracker",
+  "description": "Schlaf, Mahlzeiten & Wachstum im Blick",
   "start_url": "./",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#08080f",
   "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238b5cf6'/><text y='.85em' font-size='70' x='15'>👶</text></svg>",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
