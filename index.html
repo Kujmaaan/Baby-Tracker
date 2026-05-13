@@ -2096,4 +2096,15 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ── Boot ──────────────────────────────────────────────────�
+// ── Boot ───────────────────────────────────
+if(CFG.onboarded){
+  document.getElementById('onboard').style.display='none';
+  renderSettingsUI();
+  renderHome();
+  initFB();
+}
+if('Notification' in window && Notification.permission==='granted'){notifGranted=true;scheduleNotifs();}
+startClock();
+</script>
+</body>
+</html>

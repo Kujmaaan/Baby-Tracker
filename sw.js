@@ -1,7 +1,7 @@
 // Baby Tracker — Service Worker v7
 // Cache-First für App-Shell, Network-First für Firebase
 
-const CACHE = 'baby-tracker-v8';
+const CACHE = 'baby-tracker-v9';
 const APP_SHELL = [
   './',
   './index.html',
