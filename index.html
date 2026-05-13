@@ -665,6 +665,59 @@ html{padding-top:env(safe-area-inset-top);}
 .who-legend-item{display:flex;align-items:center;gap:.3rem;font-size:10px;font-family:var(--mono);color:var(--hint);}
 .who-legend-line{width:18px;height:2px;border-radius:1px;}
 
+
+/* ── Light mode: stronger icon backgrounds ───────────────── */
+.light .log-ico.sleep{background:rgba(79,70,229,.14);border-color:rgba(79,70,229,.35);}
+.light .log-ico.awake{background:rgba(5,150,105,.14);border-color:rgba(5,150,105,.35);}
+.light .log-ico.feed{background:rgba(124,58,237,.14);border-color:rgba(124,58,237,.35);}
+.light .log-ico.diaper{background:rgba(180,83,9,.14);border-color:rgba(180,83,9,.35);}
+.light .log-ico.growth{background:rgba(15,118,110,.14);border-color:rgba(15,118,110,.35);}
+.light .log-ico.milestone{background:rgba(190,24,93,.14);border-color:rgba(190,24,93,.35);}
+.light .log-dur{color:var(--muted);font-weight:600;}
+.light .log-type{color:var(--text);font-weight:600;}
+.light .log-time{color:var(--hint);}
+.light .log-note{color:var(--muted);}
+.light .log-by{color:var(--hint);}
+.light .ico-btn{color:var(--hint);}
+.light .ico-btn.del{color:var(--red);}
+.light .bar.sleep{background:linear-gradient(180deg,rgba(79,70,229,.7),rgba(79,70,229,1));}
+.light .bar.feed{background:linear-gradient(180deg,rgba(124,58,237,.7),rgba(124,58,237,1));}
+.light .bar.diaper{background:linear-gradient(180deg,rgba(180,83,9,.6),rgba(180,83,9,.9));}
+.light .chart-wrap{background:var(--surface2);border-radius:var(--radius-lg);padding:.75rem .5rem .5rem;}
+.light .bar-lbl{color:var(--hint);}
+.light .wf-hint{background:rgba(180,83,9,.08);border-color:rgba(180,83,9,.25);color:var(--amber);}
+.light .ob-section .ob-label{color:var(--muted);}
+.light .set-section{padding-bottom:.25rem;}
+.light .modal-overlay{background:rgba(30,27,75,.5);}
+.light .notif-banner{background:linear-gradient(135deg,#7c3aed,#4f46e5);}
+.light .growth-chart-wrap{border-color:var(--border2);}
+.light .growth-chart-tab{border-color:var(--border2);color:var(--hint);}
+.light .growth-chart-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.light .appt-item{background:var(--surface);}
+.light .qa-btn>span:first-child{filter:none;}
+.light .tdisp{color:var(--text);}
+.light .tdisp.awake{color:var(--green);}
+.light .tdisp.sleep{color:var(--blue);}
+.light .sdot{box-shadow:none;}
+.light .next-sleep.ok{color:var(--green);}
+.light .next-sleep.warn{color:var(--amber);}
+.light .next-sleep.over{color:var(--red);}
+.light .log-empty{background:transparent;}
+.light .page-header{border-bottom:1px solid var(--border);}
+.light .weekly-row-today{background:var(--primary-bg)!important;}
+
+
+/* ── Bottom nav: small screens ──────────────────────────────── */
+@media(max-width:375px){
+  .nav-btn{padding:.4rem .05rem .35rem;gap:1px;}
+  .nav-ico{font-size:18px;}
+  .nav-btn>span:last-child{font-size:8px;}
+}
+@media(max-width:320px){
+  .nav-btn>span:last-child{display:none;}
+  .nav-btn{min-height:46px;padding:.5rem 0;}
+}
+
 </style>
 
 </head>
@@ -869,6 +922,12 @@ html{padding-top:env(safe-area-inset-top);}
     <div class="stat"><div class="stat-val" id="avg-diaper">0</div><div class="stat-lbl">Ø Windeln/Tag</div></div>
     <div class="stat"><div class="stat-val" id="longest-sleep">0h</div><div class="stat-lbl">längster Schlaf</div></div>
   </div>
+  <!-- Weekly totals -->
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-top:0">
+    <div class="stat"><div class="stat-val" id="total-sleep">0h</div><div class="stat-lbl">Schlaf Woche</div></div>
+    <div class="stat"><div class="stat-val" id="total-feed">0</div><div class="stat-lbl">Mahlzeiten Wo.</div></div>
+    <div class="stat"><div class="stat-val" id="total-diaper">0</div><div class="stat-lbl">Windeln Wo.</div></div>
+  </div>
   <!-- Weekly Summary Table -->
   <div class="set-section" style="padding:0 1rem 1rem">
     <div class="set-label">Woche im Detail</div>
@@ -1015,7 +1074,12 @@ html{padding-top:env(safe-area-inset-top);}
   </div>
   <div id="routine-wake-info" style="margin:0 1rem .5rem;font-size:12px;font-family:var(--mono);color:var(--hint);padding:.5rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:none"></div>
   <div id="routine-output" style="margin:0 1rem">
-    <div class="log-empty" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem 1rem">← Plan berechnen tippen um zu starten</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1rem;text-align:center">
+      <div style="font-size:40px;margin-bottom:.75rem">🗓️</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:.4rem">Tagesplan berechnen</div>
+      <div style="font-size:12px;font-family:var(--mono);color:var(--hint);line-height:1.6">Die App berechnet einen optimalen<br>Schlaf- und Mahlzeitenplan<br>basierend auf echten Schlafdaten.</div>
+      <button class="btn bl" style="margin-top:1rem;padding:.65rem 1.5rem" onclick="generateRoutine()">Jetzt berechnen →</button>
+    </div>
   </div>
   <div style="margin:.75rem 1rem 0;font-size:11px;font-family:var(--mono);color:var(--hint);text-align:center" id="routine-note"></div>
 </div>
@@ -1145,6 +1209,19 @@ html{padding-top:env(safe-area-inset-top);}
     </div>
   </div>
 
+  <div class="set-section" id="pwa-install-section" style="display:none">
+    <div class="set-label">App installieren</div>
+    <div class="set-card">
+      <div class="set-row">
+        <div>
+          <div class="set-row-lbl">Zur Startseite hinzufügen</div>
+          <div class="set-row-sub">Offline nutzbar, wie eine native App</div>
+        </div>
+        <button class="btn bl" style="padding:7px 11px;font-size:11px;max-width:90px" onclick="triggerPwaInstall()">Installieren</button>
+      </div>
+    </div>
+  </div>
+
   <div class="set-section">
     <div class="set-label">Backup &amp; Import</div>
     <div class="set-card" style="padding:0">
@@ -1207,8 +1284,8 @@ html{padding-top:env(safe-area-inset-top);}
 <div class="modal-overlay hidden" id="growth-modal">
   <div class="modal">
     <div class="modal-title">Messung eintragen</div>
-    <div class="modal-row"><span class="modal-lbl">Gewicht (g)</span><input class="picker" type="number" id="gr-weight" min="0" max="30000" placeholder="8500" style="width:90px"></div>
-    <div class="modal-row"><span class="modal-lbl">Größe (cm)</span><input class="picker" type="number" id="gr-height" min="0" max="200" placeholder="72" style="width:90px"></div>
+    <div class="modal-row"><span class="modal-lbl">Gewicht<br><small style="font-size:9px;color:var(--hint)">in Gramm</small></span><input class="picker" type="number" id="gr-weight" min="0" max="30000" placeholder="8500" style="width:90px"></div>
+    <div class="modal-row"><span class="modal-lbl">Größe<br><small style="font-size:9px;color:var(--hint)">in cm</small></span><input class="picker" type="number" id="gr-height" min="0" max="200" placeholder="72" style="width:90px"></div>
     <div class="modal-row"><span class="modal-lbl">Kopfumfang (cm)</span><input class="picker" type="number" id="gr-head" min="0" max="60" placeholder="46" style="width:90px"></div>
     <div class="modal-row"><span class="modal-lbl">Notiz</span><textarea class="note-input" id="gr-note" rows="2" placeholder="z.B. U5 beim Kinderarzt"></textarea></div>
     <div class="modal-btns"><button class="btn" onclick="closeModal('growth-modal')">Abbrechen</button><button class="btn te" onclick="saveGrowth()">Speichern</button></div>
@@ -1834,6 +1911,18 @@ function renderStatsPage(){
   document.getElementById('avg-feed').textContent=avgFd.toFixed(1);
   document.getElementById('avg-diaper').textContent=avgDp.toFixed(1);
   document.getElementById('longest-sleep').textContent=f(longest)||'0h';
+
+  // Weekly totals
+  const totalSl=buckets.reduce((s,b)=>s+b.sleep,0);
+  const totalFd=buckets.reduce((s,b)=>s+b.feed,0);
+  const totalDp=buckets.reduce((s,b)=>s+b.diaper,0);
+  const fTot=ms=>{const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);return h+'h'+(m?m+'m':'');};
+  const tsl=document.getElementById('total-sleep');
+  const tfd=document.getElementById('total-feed');
+  const tdp=document.getElementById('total-diaper');
+  if(tsl)tsl.textContent=fTot(totalSl)||'0h';
+  if(tfd)tfd.textContent=totalFd;
+  if(tdp)tdp.textContent=totalDp;
 
   // Weekly detail table
   const tbody=document.getElementById('weekly-table-body');
@@ -2856,6 +2945,29 @@ function restoreJSON(input){
     input.value='';
   };
   r.readAsText(file,'utf-8');
+}
+
+
+// ── PWA Install prompt ───────────────────────────────────────
+let pwaInstallEvent = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  pwaInstallEvent = e;
+  const sec = document.getElementById('pwa-install-section');
+  if (sec) sec.style.display = '';
+});
+window.addEventListener('appinstalled', () => {
+  pwaInstallEvent = null;
+  const sec = document.getElementById('pwa-install-section');
+  if (sec) sec.style.display = 'none';
+  toast('App installiert ✓');
+});
+async function triggerPwaInstall() {
+  if (!pwaInstallEvent) { toast('Installation nicht verfügbar — nutze "Zum Home-Bildschirm" im Browser-Menü'); return; }
+  pwaInstallEvent.prompt();
+  const { outcome } = await pwaInstallEvent.userChoice;
+  if (outcome === 'accepted') toast('App wird installiert ✓');
+  pwaInstallEvent = null;
 }
 
 // ── Boot ───────────────────────────────────
