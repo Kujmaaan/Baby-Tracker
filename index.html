@@ -374,10 +374,103 @@ select.set-input{cursor:pointer}
 .btn,.nav-btn,.seg-btn,.log-del,.btn-fix-start{min-height:44px}
 .picker{min-height:44px;touch-action:manipulation}
 input[type=number],input[type=text],input[type=date],select{min-height:44px;font-size:16px!important}
+
+/* ── Light theme ─────────────────────────────────────────── */
+.light{
+  --bg:#f4f3ff;--surface:#ffffff;--surface2:#f0eeff;--surface3:#e8e5ff;
+  --border:rgba(99,60,210,.12);--border2:rgba(99,60,210,.22);
+  --text:#1a0a3c;--muted:rgba(26,10,60,.55);--hint:rgba(26,10,60,.32);
+  --primary:#6d28d9;--primary-light:#7c3aed;--primary-bg:rgba(109,40,217,.1);--primary-b:rgba(109,40,217,.28);
+  --blue:#4f46e5;--blue-bg:rgba(79,70,229,.1);--blue-b:rgba(79,70,229,.28);
+  --green:#059669;--green-bg:rgba(5,150,105,.1);--green-b:rgba(5,150,105,.25);
+  --amber:#d97706;--amber-bg:rgba(217,119,6,.1);--amber-b:rgba(217,119,6,.25);
+  --red:#e11d48;--red-bg:rgba(225,29,72,.1);--red-b:rgba(225,29,72,.25);
+  --purple:#7c3aed;--purple-bg:rgba(124,58,237,.1);--purple-b:rgba(124,58,237,.28);
+  --shadow-xs:0 1px 6px rgba(0,0,0,.08);--shadow-sm:0 2px 14px rgba(0,0,0,.1);--shadow-md:0 6px 30px rgba(0,0,0,.12);
+  --glow-primary:0 0 24px rgba(109,40,217,.1);
+}
+.light .nav,.light .sync-bar,.light .modal,.light .set-card{background:var(--surface);border-color:var(--border);}
+.light .card{background:var(--surface);}
+.light input,.light select,.light textarea{background:var(--surface2);color:var(--text);}
+.light .bar-chart{background:var(--surface2);}
+
+/* ── Theme toggle button ──────────────────────────────────── */
+#theme-toggle{
+  position:fixed;top:env(safe-area-inset-top,0);right:0;
+  background:none;border:none;padding:.7rem .9rem;font-size:18px;
+  cursor:pointer;z-index:900;opacity:.7;transition:opacity var(--t);
+  padding-top:calc(env(safe-area-inset-top,0) + .7rem);
+}
+#theme-toggle:active{opacity:1;transform:scale(1.15);}
+
+/* ── Firebase loading overlay ─────────────────────────────── */
+#fb-loading{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--bg);gap:1rem;transition:opacity .4s;
+}
+#fb-loading.fade-out{opacity:0;pointer-events:none;}
+#fb-loading.hidden{display:none;}
+.fb-spinner{
+  width:44px;height:44px;border-radius:50%;
+  border:3px solid var(--border2);border-top-color:var(--primary);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fb-loading-txt{font-family:var(--mono);font-size:12px;color:var(--hint);}
+
+/* ── Onboarding Guide (swipe cards) ──────────────────────── */
+#ob-guide-overlay{
+  position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.7);
+  display:flex;align-items:center;justify-content:center;
+  padding:1.5rem;opacity:0;transition:opacity .3s;
+}
+#ob-guide-overlay.visible{opacity:1;}
+#ob-guide-overlay.hidden{display:none;}
+.ob-guide-modal{
+  background:var(--surface);border-radius:var(--radius-xl);
+  padding:2rem 1.5rem 1.5rem;max-width:360px;width:100%;
+  box-shadow:var(--shadow-md);position:relative;
+}
+.ob-guide-icon{font-size:48px;text-align:center;margin-bottom:1rem;}
+.ob-guide-title{font-size:18px;font-weight:700;color:var(--text);text-align:center;margin-bottom:.5rem;}
+.ob-guide-desc{font-size:13px;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:1.5rem;}
+.ob-guide-dots{display:flex;justify-content:center;gap:6px;margin-bottom:1.5rem;}
+.ob-guide-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:background .2s;}
+.ob-guide-dot.active{background:var(--primary);}
+.ob-guide-btns{display:flex;gap:8px;}
+
+/* ── Appointment (Arzttermine) section ───────────────────── */
+#appt-list .appt-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.75rem 1rem;border-bottom:1px solid var(--border);
+}
+#appt-list .appt-item:last-child{border-bottom:none;}
+.appt-date{font-family:var(--mono);font-size:11px;color:var(--primary);min-width:80px;}
+.appt-title{font-size:13px;color:var(--text);flex:1;}
+.appt-del{background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:.2rem;}
+
+/* ── CSV import button ───────────────────────────────────── */
+.import-btn-wrap{position:relative;overflow:hidden;display:inline-block;}
+.import-btn-wrap input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0;
+}
+
+/* ── Feed ml/dur conditional row ──────────────────────────── */
+#feed-ml-row,.feed-breast-row{transition:opacity .2s,max-height .2s;}
+
+/* ── Backup section ─────────────────────────────────────── */
+.backup-row{display:flex;gap:8px;flex-wrap:wrap;padding:.75rem 1rem;}
+
 </style>
 
 </head>
 <body>
+<div id="fb-loading">
+  <div class="fb-spinner"></div>
+  <div class="fb-loading-txt">verbinde...</div>
+</div>
+<button id="theme-toggle" onclick="toggleTheme()" title="Hell/Dunkel">🌙</button>
 
 
 
@@ -414,6 +507,25 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
     </div>
   </div>
   <button class="ob-btn" onclick="finishOnboard()">Los geht's →</button>
+</div>
+
+<!-- ONBOARDING GUIDE -->
+<div id="ob-guide-overlay" class="hidden">
+  <div class="ob-guide-modal">
+    <div class="ob-guide-icon" id="og-icon">🌙</div>
+    <div class="ob-guide-title" id="og-title">Schlaf tracken</div>
+    <div class="ob-guide-desc" id="og-desc">Tippe auf „Schläft" wenn das Baby einschläft und auf „Aufgewacht" wenn es aufwacht.</div>
+    <div class="ob-guide-dots">
+      <div class="ob-guide-dot active"></div>
+      <div class="ob-guide-dot"></div>
+      <div class="ob-guide-dot"></div>
+      <div class="ob-guide-dot"></div>
+    </div>
+    <div class="ob-guide-btns">
+      <button class="btn" id="og-skip" onclick="closeGuide()">Überspringen</button>
+      <button class="btn bl" id="og-next" onclick="guideNext()" style="flex:1">Weiter →</button>
+    </div>
+  </div>
 </div>
 
 <!-- NAV -->
@@ -581,6 +693,19 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
   <button class="btn re" style="margin:.25rem 1rem .25rem;width:calc(100% - 2rem)" onclick="openHealthModal('symptom')">+ Symptom / Fieber</button>
   <button class="btn am" style="margin:.25rem 1rem .75rem;width:calc(100% - 2rem)" onclick="openHealthModal('meds')">+ Medikament</button>
   <div class="log-wrap" style="margin:0 1rem" id="health-log"><div class="log-empty">noch keine einträge</div></div>
+
+  <!-- Arzttermine -->
+  <div class="set-section" style="padding:.5rem 1rem 0">
+    <div class="set-label">Arzttermine &amp; Erinnerungen</div>
+    <div class="set-card" style="padding:0">
+      <div id="appt-list"><div class="log-empty" style="padding:1rem">noch keine Termine</div></div>
+    </div>
+    <div style="padding:.5rem 1rem .25rem;display:flex;gap:8px">
+      <input class="set-input" style="flex:1" type="text" id="appt-title-in" placeholder="Termin (z.B. U6 Vorsorge)">
+      <input class="set-input" type="datetime-local" id="appt-dt-in" style="max-width:160px">
+      <button class="btn bl" onclick="addAppt()" style="padding:7px 12px;font-size:12px">+</button>
+    </div>
+  </div>
 </div>
 
 <!-- MILESTONE MODAL -->
@@ -760,7 +885,27 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
       <div class="set-row"><div><div class="set-row-lbl">Onboarding reset</div><div class="set-row-sub">Einrichtung neu starten</div></div><button class="btn" style="padding:7px 11px;font-size:11px;max-width:85px" onclick="resetOnboard()">reset</button></div>
     </div>
   </div>
-  <div style="text-align:center;padding:1rem;font-size:10px;font-family:var(--mono);color:var(--hint)">Baby Tracker v7 · made with ❤️<br><span style='opacity:.4'>kujmaaan · firebase rtdb</span></div>
+
+  <div class="set-section">
+    <div class="set-label">Backup &amp; Import</div>
+    <div class="set-card" style="padding:0">
+      <div class="backup-row">
+        <button class="btn te" style="font-size:12px;flex:1" onclick="exportCSV()">📄 CSV Export</button>
+        <div class="import-btn-wrap">
+          <button class="btn" style="font-size:12px">📥 CSV Import</button>
+          <input type="file" accept=".csv" onchange="importCSV(this)">
+        </div>
+      </div>
+      <div class="backup-row" style="padding-top:0">
+        <button class="btn pu" style="font-size:12px;flex:1" onclick="backupJSON()">💾 Backup JSON</button>
+        <div class="import-btn-wrap">
+          <button class="btn" style="font-size:12px">📂 Restore JSON</button>
+          <input type="file" accept=".json" onchange="restoreJSON(this)">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;padding:1rem;font-size:10px;font-family:var(--mono);color:var(--hint)">Baby Tracker v8 · made with ❤️<br><span style='opacity:.4'>kujmaaan · firebase rtdb</span></div>
 </div>
 
 <!-- MODALS -->
@@ -770,10 +915,10 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
     <div class="modal-title">Stillen / Flasche</div>
     <div class="modal-row"><span class="modal-lbl">Art</span>
       <div class="seg-btns" id="feed-type-btns">
-        <button class="seg-btn active" data-val="brust-links" onclick="segSelect(this,'feed-type-btns')">Brust links</button>
-        <button class="seg-btn" data-val="brust-rechts" onclick="segSelect(this,'feed-type-btns')">Brust rechts</button>
-        <button class="seg-btn" data-val="flasche" onclick="segSelect(this,'feed-type-btns')">Flasche</button>
-        <button class="seg-btn" data-val="beikost" onclick="segSelect(this,'feed-type-btns')">Beikost</button>
+        <button class="seg-btn active" data-val="brust-links" onclick="segSelect(this,'feed-type-btns');toggleFeedMlRow()">Brust links</button>
+        <button class="seg-btn" data-val="brust-rechts" onclick="segSelect(this,'feed-type-btns');toggleFeedMlRow()">Brust rechts</button>
+        <button class="seg-btn" data-val="flasche" onclick="segSelect(this,'feed-type-btns');toggleFeedMlRow()">Flasche</button>
+        <button class="seg-btn" data-val="beikost" onclick="segSelect(this,'feed-type-btns');toggleFeedMlRow()">Beikost</button>
       </div>
     </div>
     <div class="modal-row"><span class="modal-lbl">Dauer (Min)</span><input class="picker" type="number" id="feed-dur" min="0" max="120" placeholder="15"></div>
@@ -928,6 +1073,7 @@ window.finishOnboard=()=>{
   CFG.activeChildId=id;CFG.p1=p1;CFG.p2=p2;CFG.who=p1;CFG.onboarded=true;
   saveCfg();document.getElementById('onboard').style.display='none';
   initFB();renderSettingsUI();renderHome();
+  setTimeout(showGuide, 400);
 };
 
 // ── Firebase ───────────────────────────────────────────────────────────────
@@ -1037,7 +1183,16 @@ window.doWake=async()=>{
 window.delEntry=async key=>{if(!confirm('Eintrag löschen?'))return;await removeLog(key);};
 
 // ── Feed ───────────────────────────────────────────────────────────────────
-window.openFeedModal=()=>{document.getElementById('feed-modal').classList.remove('hidden');};
+window.openFeedModal=()=>{
+  document.getElementById('feed-modal').classList.remove('hidden');
+  // default: show ml for Flasche, hide for Brust
+  toggleFeedMlRow();
+};
+function toggleFeedMlRow(){
+  const type=document.querySelector('#feed-type-btns .seg-btn.active')?.dataset.val||'';
+  const show=type==='flasche'||type==='beikost';
+  document.getElementById('feed-ml-row').style.display=show?'':'none';
+}
 window.saveFeed=async()=>{
   const type=document.querySelector('#feed-type-btns .seg-btn.active')?.dataset.val||'flasche';
   const dur=parseInt(document.getElementById('feed-dur').value)||0;
@@ -2096,14 +2251,201 @@ if('serviceWorker' in navigator){
   });
 }
 
+
+// ── Theme toggle ────────────────────────────────────────────
+(function(){
+  const saved=localStorage.getItem('bt-theme');
+  if(saved==='light'){document.documentElement.classList.add('light');}
+})();
+function toggleTheme(){
+  const isLight=document.documentElement.classList.toggle('light');
+  localStorage.setItem('bt-theme',isLight?'light':'dark');
+  document.getElementById('theme-toggle').textContent=isLight?'☀️':'🌙';
+}
+// set initial icon
+document.addEventListener('DOMContentLoaded',()=>{
+  const btn=document.getElementById('theme-toggle');
+  if(btn) btn.textContent=document.documentElement.classList.contains('light')?'☀️':'🌙';
+});
+
+// ── Firebase loading overlay ─────────────────────────────────
+function showFbLoading(){
+  const el=document.getElementById('fb-loading');
+  if(el){el.classList.remove('hidden');el.classList.remove('fade-out');}
+}
+function hideFbLoading(){
+  const el=document.getElementById('fb-loading');
+  if(!el)return;
+  el.classList.add('fade-out');
+  setTimeout(()=>el.classList.add('hidden'),450);
+}
+
+// ── Onboarding Guide ─────────────────────────────────────────
+const OG_SLIDES=[
+  {icon:'🌙',title:'Schlaf tracken',desc:'Tippe auf „Schläft" wenn das Baby einschläft — und auf „Aufgewacht" wenn es aufwacht. Alles andere berechnet die App.'},
+  {icon:'🍼',title:'Mahlzeiten & Windeln',desc:'Schnellbuttons auf der Hauptseite — Brust, Flasche, Beikost. Dauer und Menge optional eintragen.'},
+  {icon:'📊',title:'Statistik & Verlauf',desc:'Unter „Statistik" siehst du Schlafdurchschnitte, unter „Verlauf" alle Einträge mit Datumsnavigation.'},
+  {icon:'⚙️',title:'Einstellungen & Sync',desc:'Kind hinzufügen, Elternteile benennen — alle Daten werden automatisch in Firebase synchronisiert.'},
+];
+let ogIdx=0;
+function showGuide(){
+  ogIdx=0;
+  renderGuideSlide();
+  const ov=document.getElementById('ob-guide-overlay');
+  ov.classList.remove('hidden');
+  requestAnimationFrame(()=>ov.classList.add('visible'));
+}
+function renderGuideSlide(){
+  const s=OG_SLIDES[ogIdx];
+  document.getElementById('og-icon').textContent=s.icon;
+  document.getElementById('og-title').textContent=s.title;
+  document.getElementById('og-desc').textContent=s.desc;
+  document.querySelectorAll('.ob-guide-dot').forEach((d,i)=>d.classList.toggle('active',i===ogIdx));
+  document.getElementById('og-next').textContent=ogIdx===OG_SLIDES.length-1?"Los geht's ✓":'Weiter →';
+  document.getElementById('og-skip').style.display=ogIdx===OG_SLIDES.length-1?'none':'';
+}
+function guideNext(){
+  if(ogIdx<OG_SLIDES.length-1){ogIdx++;renderGuideSlide();}
+  else{closeGuide();}
+}
+function closeGuide(){
+  const ov=document.getElementById('ob-guide-overlay');
+  ov.classList.remove('visible');
+  setTimeout(()=>ov.classList.add('hidden'),300);
+}
+
+// ── Appointments (Arzttermine) ────────────────────────────────
+let fbAppts=JSON.parse(localStorage.getItem('bt-appts')||'[]');
+function saveAppts(){localStorage.setItem('bt-appts',JSON.stringify(fbAppts));}
+function addAppt(){
+  const title=document.getElementById('appt-title-in').value.trim();
+  const dt=document.getElementById('appt-dt-in').value;
+  if(!title||!dt){toast('Bitte Titel und Datum angeben');return;}
+  const ts=new Date(dt).getTime();
+  fbAppts.push({id:Date.now(),title,ts});
+  fbAppts.sort((a,b)=>a.ts-b.ts);
+  saveAppts();
+  document.getElementById('appt-title-in').value='';
+  document.getElementById('appt-dt-in').value='';
+  renderAppts();
+  scheduleApptNotif(fbAppts[fbAppts.length-1]);
+  toast('Termin gespeichert ✓');
+}
+function deleteAppt(id){
+  fbAppts=fbAppts.filter(a=>a.id!==id);
+  saveAppts();
+  renderAppts();
+}
+function renderAppts(){
+  const wrap=document.getElementById('appt-list');
+  if(!wrap)return;
+  if(!fbAppts.length){wrap.innerHTML='<div class="log-empty" style="padding:1rem">noch keine Termine</div>';return;}
+  const now=Date.now();
+  wrap.innerHTML=fbAppts.map(a=>{
+    const d=new Date(a.ts);
+    const past=a.ts<now;
+    const dateStr=d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    const timeStr=d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="appt-item" style="${past?'opacity:.45':''}">
+      <div class="appt-date">${dateStr}<br>${timeStr}</div>
+      <div class="appt-title">${a.title}${past?' ✓':''}</div>
+      <button class="appt-del" onclick="deleteAppt(${a.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+function scheduleApptNotif(appt){
+  if(!notifGranted)return;
+  const now=Date.now();
+  const oneDayMs=86400000;
+  // 1 day before
+  const t1=appt.ts-oneDayMs;
+  if(t1>now)setTimeout(()=>{
+    new Notification('Morgen: '+appt.title,{body:'Arzttermin morgen um '+new Date(appt.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr',icon:'icon-192.png'});
+  },t1-now);
+  // On the day (30 min before)
+  const t2=appt.ts-1800000;
+  if(t2>now)setTimeout(()=>{
+    new Notification('Heute: '+appt.title,{body:'In 30 Minuten!',icon:'icon-192.png'});
+  },t2-now);
+}
+
+// ── CSV Import ────────────────────────────────────────────────
+function importCSV(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=async e=>{
+    const lines=e.target.result.split('\n').filter(l=>l.trim()&&!l.startsWith('Typ'));
+    let count=0;
+    for(const line of lines){
+      const cols=[];let cur='',inQ=false;
+      for(const ch of line){
+        if(ch==='"'){inQ=!inQ;}
+        else if(ch===','&&!inQ){cols.push(cur);cur='';}
+        else cur+=ch;
+      }
+      cols.push(cur);
+      if(cols.length<2)continue;
+      const [type,startStr,endStr,dur,details,note,by]=cols.map(v=>v.replace(/^"|"$/g,'').replace(/""/g,'"'));
+      const start=new Date(startStr).getTime();
+      if(isNaN(start))continue;
+      const entry={type:type.trim(),start,end:endStr?new Date(endStr).getTime():null,note:note||'',by:by||''};
+      if(type==='feed'){const [feedType,mlPart]=details.split(' ');entry.feedType=feedType;if(mlPart)entry.ml=parseInt(mlPart)||0;}
+      await pushLog(entry);
+      count++;
+    }
+    toast(count+' Einträge importiert ✓');
+    input.value='';
+  };
+  r.readAsText(file,'utf-8');
+}
+
+// ── Backup / Restore JSON ─────────────────────────────────────
+function backupJSON(){
+  const data={version:1,exported:new Date().toISOString(),cfg:CFG,log:fbLog,growth:fbGrowth,milestones:fbMilestones,health:fbHealth,appts:fbAppts};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const name='BabyTracker_'+new Date().toISOString().slice(0,10)+'.json';
+  a.href=url;a.download=name;a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup gespeichert: '+name);
+}
+function restoreJSON(input){
+  const file=input.files[0];if(!file)return;
+  if(!confirm('Alle aktuellen Daten werden überschrieben. Wirklich?')){input.value='';return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.cfg)Object.assign(CFG,data.cfg);
+      if(data.log)data.log.forEach(entry=>pushLog(entry));
+      if(data.appts){fbAppts=data.appts;saveAppts();renderAppts();}
+      saveCfg();
+      renderSettingsUI();renderHome();
+      toast('Backup wiederhergestellt ✓');
+    }catch(err){toast('Fehler beim Laden: '+err.message);}
+    input.value='';
+  };
+  r.readAsText(file,'utf-8');
+}
+
 // ── Boot ───────────────────────────────────
 if(CFG.onboarded){
   document.getElementById('onboard').style.display='none';
   renderSettingsUI();
   renderHome();
+  showFbLoading();
   initFB();
+  // Hide loading after connection or 3s timeout
+  setTimeout(hideFbLoading, 3000);
+} else {
+  hideFbLoading();
 }
-if('Notification' in window && Notification.permission==='granted'){notifGranted=true;scheduleNotifs();}
+if('Notification' in window && Notification.permission==='granted'){
+  notifGranted=true;scheduleNotifs();
+  fbAppts.forEach(scheduleApptNotif);
+}
+renderAppts();
 startClock();
 </script>
 
