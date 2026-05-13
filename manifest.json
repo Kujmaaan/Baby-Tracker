@@ -1,24 +1,48 @@
 {
   "name": "Baby Tracker",
   "short_name": "BabyTracker",
-  "description": "Schlaf, Mahlzeiten & Wachstum im Blick",
+  "description": "Schlaf, Mahlzeiten & Wachstum im Blick — jederzeit, auch offline.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#08080f",
+  "background_color": "#ffffff",
   "theme_color": "#8b5cf6",
   "orientation": "portrait-primary",
+  "lang": "de",
+  "categories": ["health", "lifestyle"],
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Schlaf starten",
+      "short_name": "Schlafen",
+      "description": "Schlaf-Tracking starten",
+      "url": "./?action=sleep",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

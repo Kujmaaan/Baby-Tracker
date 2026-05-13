@@ -1,83 +1,112 @@
-// Baby Tracker — Service Worker v7
-// Cache-First für App-Shell, Network-First für Firebase
+// ─── Service Worker v15 — baby-tracker ───────────────────────────────────────
+// Strategy:
+//   • App shell (HTML/JS/CSS/manifest) → Network-first, fallback to cache
+//   • Google Fonts                     → Cache-first (immutable)
+//   • Firebase domains                 → Network-only (no caching)
+//   • Offline fallback                 → /index.html from cache
 
-const CACHE = 'baby-tracker-v14';
+const CACHE_VER   = 'baby-tracker-v15';
+const FONT_CACHE  = 'bt-fonts-v2';
+
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
-  'https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap',
+  './styles/themes.css',
+  './styles/main.css',
+  './src/constants.js',
+  './src/helpers.js',
+  './src/storage.js',
+  './src/firebase.js',
+  './src/sleep.js',
+  './src/config.js',
+  './src/app.js',
 ];
 
-// Firebase & externe Ressourcen — NICHT cachen (immer live)
-const SKIP_CACHE = [
-  'firebasedatabase.app',
-  'firebaseio.com',
-  'googleapis.com/identitytoolkit',
-  'googleapis.com/oauth',
+const SKIP_CACHE_PATTERNS = [
+  /firebase/,
+  /googleapis\.com/,
+  /firebaseio\.com/,
+  /gstatic\.com/,
 ];
 
-// ── Install: App-Shell cachen ─────────────────────────────────
+const FONT_PATTERNS = [
+  /fonts\.googleapis\.com/,
+  /fonts\.gstatic\.com/,
+];
+
+// ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => {
-      return cache.addAll(APP_SHELL.map(url => new Request(url, { cache: 'reload' })));
-    }).catch(err => {
-      console.warn('[SW] Cache-Install Fehler (ignoriert):', err);
-    })
+    caches.open(CACHE_VER)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// ── Activate: Alte Caches löschen ────────────────────────────
+// ── Activate ──────────────────────────────────────────────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_VER && k !== FONT_CACHE)
+          .map(k => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// ── Fetch: Cache-First für App-Shell ─────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', e => {
   const url = e.request.url;
 
-  // Firebase & externe APIs immer live
-  if (SKIP_CACHE.some(s => url.includes(s))) return;
+  // Skip non-GET and chrome-extension
   if (e.request.method !== 'GET') return;
+  if (url.startsWith('chrome-extension://')) return;
 
-  // Google Fonts: Cache-First
-  if (url.includes('fonts.g')) {
+  // Firebase / Google APIs → network only
+  if (SKIP_CACHE_PATTERNS.some(p => p.test(url))) return;
+
+  // Google Fonts → cache first
+  if (FONT_PATTERNS.some(p => p.test(url))) {
     e.respondWith(
-      caches.match(e.request).then(cached => {
-        if (cached) return cached;
-        return fetch(e.request).then(res => {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-          return res;
-        });
-      })
+      caches.open(FONT_CACHE).then(cache =>
+        cache.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(res => {
+            if (res.ok) cache.put(e.request, res.clone());
+            return res;
+          });
+        })
+      )
     );
     return;
   }
 
-  // App-Shell (HTML, Manifest, etc.): Network-First mit Cache-Fallback
+  // App shell → network first, fallback to cache
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        if (res && res.status === 200) {
+        if (res.ok) {
           const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          caches.open(CACHE_VER).then(c => c.put(e.request, clone));
         }
         return res;
       })
-      .catch(() => caches.match(e.request).then(cached => {
-        if (cached) return cached;
-        // Offline-Fallback: index.html für Navigation
-        if (e.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      }))
+      .catch(() =>
+        caches.match(e.request)
+          .then(cached => cached || caches.match('./index.html'))
+      )
   );
+});
+
+// ── Background Sync (future) ──────────────────────────────────────────────────
+self.addEventListener('sync', e => {
+  if (e.tag === 'bt-sync') {
+    // Sync engine is called from app.js via postMessage
+    e.waitUntil(self.clients.matchAll().then(clients =>
+      clients.forEach(c => c.postMessage({ type: 'SYNC_REQUESTED' }))
+    ));
+  }
 });

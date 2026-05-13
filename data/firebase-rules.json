@@ -1,0 +1,47 @@
+{
+  "rules": {
+    "families": {
+      "$familyId": {
+        ".read":  "auth != null && root.child('members').child(auth.uid).child('familyId').val() == $familyId",
+        ".write": "auth != null && root.child('members').child(auth.uid).child('familyId').val() == $familyId",
+        "sleep": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('ts').isNumber() && newData.child('ts').val() <= now + 60000"
+          }
+        },
+        "feed": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('ts').isNumber()"
+          }
+        },
+        "diaper": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('ts').isNumber()"
+          }
+        },
+        "health": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','childId','ts','type','value'])"
+          }
+        },
+        "milestone": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','childId','ts','label'])"
+          }
+        },
+        "appointment": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','childId','ts','title'])"
+          }
+        }
+      }
+    },
+    "members": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['familyId'])"
+      }
+    }
+  }
+}
