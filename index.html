@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" class="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -61,7 +61,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;background:var(--bg)}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100%;max-width:430px;margin:0 auto;padding:0 0 calc(5rem + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100%;max-width:430px;margin:0 auto;padding:0 0 calc(5.5rem + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
 
 /* ── Animations ── */
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -72,12 +72,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 @keyframes wfSlide{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
 
 /* ── NAV ── */
-.nav{display:flex;position:sticky;top:0;z-index:50;background:rgba(8,8,15,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0;padding-top:env(safe-area-inset-top);overflow-x:auto;scrollbar-width:none}
-.nav::-webkit-scrollbar{display:none}
-.nav-btn{flex:1;min-width:60px;padding:.8rem .2rem .7rem;font-size:9.5px;font-family:var(--mono);color:var(--hint);background:none;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;position:relative;transition:color var(--t);-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.nav-bottom{
+  display:flex;position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;z-index:200;
+  background:rgba(8,8,15,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-top:4px;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:.45rem .1rem .4rem;gap:2px;
+  font-size:9px;font-family:var(--mono);color:var(--hint);
+  background:none;border:none;cursor:pointer;
+  letter-spacing:.04em;text-transform:uppercase;
+  position:relative;transition:color var(--t);
+  -webkit-tap-highlight-color:transparent;
+  min-height:52px;
+}
+.nav-ico{font-size:20px;line-height:1;transition:transform var(--t);}
+.nav-btn.active .nav-ico{transform:scale(1.1);}
 .nav-btn::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%) scaleX(0);width:65%;height:2px;background:linear-gradient(90deg,var(--primary),var(--primary-light));border-radius:2px 2px 0 0;transition:transform var(--t)}
-.nav-btn.active{color:var(--primary-light)}
-.nav-btn.active::after{transform:translateX(-50%) scaleX(1)}
+.nav-btn.active{color:var(--primary-light);}
+.nav-btn.active .nav-ico{filter:drop-shadow(0 0 4px currentColor);}
 .nav-btn:not(.active):hover{color:var(--muted)}
 
 .page{display:none;padding-bottom:2rem;animation:fadeIn .2s ease-out}
@@ -377,29 +394,85 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
 
 /* ── Light theme ─────────────────────────────────────────── */
 .light{
-  --bg:#f4f3ff;--surface:#ffffff;--surface2:#f0eeff;--surface3:#e8e5ff;
-  --border:rgba(99,60,210,.12);--border2:rgba(99,60,210,.22);
-  --text:#1a0a3c;--muted:rgba(26,10,60,.55);--hint:rgba(26,10,60,.32);
-  --primary:#6d28d9;--primary-light:#7c3aed;--primary-bg:rgba(109,40,217,.1);--primary-b:rgba(109,40,217,.28);
-  --blue:#4f46e5;--blue-bg:rgba(79,70,229,.1);--blue-b:rgba(79,70,229,.28);
-  --green:#059669;--green-bg:rgba(5,150,105,.1);--green-b:rgba(5,150,105,.25);
-  --amber:#d97706;--amber-bg:rgba(217,119,6,.1);--amber-b:rgba(217,119,6,.25);
-  --red:#e11d48;--red-bg:rgba(225,29,72,.1);--red-b:rgba(225,29,72,.25);
-  --purple:#7c3aed;--purple-bg:rgba(124,58,237,.1);--purple-b:rgba(124,58,237,.28);
-  --shadow-xs:0 1px 6px rgba(0,0,0,.08);--shadow-sm:0 2px 14px rgba(0,0,0,.1);--shadow-md:0 6px 30px rgba(0,0,0,.12);
-  --glow-primary:0 0 24px rgba(109,40,217,.1);
+  --bg:#f0edff;
+  --surface:#ffffff;
+  --surface2:#f7f5ff;
+  --surface3:#ede9fe;
+  --border:rgba(109,40,217,.11);
+  --border2:rgba(109,40,217,.2);
+  --text:#1e1b4b;
+  --muted:rgba(30,27,75,.62);
+  --hint:rgba(30,27,75,.38);
+  --primary:#7c3aed;
+  --primary-light:#8b5cf6;
+  --primary-bg:rgba(124,58,237,.1);
+  --primary-b:rgba(124,58,237,.3);
+  --blue:#4f46e5;
+  --blue-bg:rgba(79,70,229,.1);
+  --blue-b:rgba(79,70,229,.3);
+  --green:#059669;
+  --green-bg:rgba(5,150,105,.1);
+  --green-b:rgba(5,150,105,.28);
+  --amber:#b45309;
+  --amber-bg:rgba(180,83,9,.1);
+  --amber-b:rgba(180,83,9,.28);
+  --red:#be123c;
+  --red-bg:rgba(190,18,60,.08);
+  --red-b:rgba(190,18,60,.25);
+  --purple:#7c3aed;
+  --purple-bg:rgba(124,58,237,.1);
+  --purple-b:rgba(124,58,237,.3);
+  --pink:#be185d;--pink-bg:rgba(190,24,93,.08);--pink-b:rgba(190,24,93,.25);
+  --teal:#0f766e;--teal-bg:rgba(15,118,110,.08);--teal-b:rgba(15,118,110,.25);
+  --shadow-xs:0 1px 4px rgba(109,40,217,.07),0 1px 2px rgba(0,0,0,.04);
+  --shadow-sm:0 4px 18px rgba(109,40,217,.1),0 2px 4px rgba(0,0,0,.06);
+  --shadow-md:0 8px 36px rgba(109,40,217,.14),0 4px 8px rgba(0,0,0,.07);
+  --glow-primary:0 0 28px rgba(124,58,237,.22);
 }
-.light .nav,.light .sync-bar,.light .modal,.light .set-card{background:var(--surface);border-color:var(--border);}
-.light .card{background:var(--surface);}
-.light input,.light select,.light textarea{background:var(--surface2);color:var(--text);}
+.light body{background:var(--bg);}
+.light .nav-bottom{background:rgba(255,255,255,.96);border-top-color:var(--border);}
+.light .card{background:var(--surface);box-shadow:var(--shadow-sm);}
+.light .set-card{background:var(--surface);box-shadow:var(--shadow-xs);}
+.light .modal{background:var(--surface);box-shadow:var(--shadow-md);}
+.light .sync-bar{background:rgba(240,237,255,.85);}
+.light .clock-box{background:var(--surface);box-shadow:var(--shadow-xs);}
+.light .stat{background:var(--surface);box-shadow:var(--shadow-xs);}
+.light .qa-btn{background:var(--surface);box-shadow:var(--shadow-xs);}
+.light .info-card{background:var(--surface2);}
+.light .log-wrap{background:transparent;}
+.light .log-entry{background:var(--surface);border-left:3px solid var(--border2);}
+.light input,.light select,.light textarea{background:var(--surface2);color:var(--text);border-color:var(--border2);}
 .light .bar-chart{background:var(--surface2);}
+.light .mehr-panel{background:var(--surface);}
+.light .mehr-btn{background:var(--surface2);}
+.light .ob-guide-modal{background:var(--surface);}
+.light #fb-loading{background:var(--bg);}
+.light .ob-input{background:var(--surface);color:var(--text);border-color:var(--border2);}
+.light .gender-btn{background:var(--surface2);}
+.light .seg-btn{background:var(--surface2);color:var(--muted);}
+.light .seg-btn.active{background:var(--primary);color:#fff;}
+.light .tdisp.awake{color:var(--green);}
+.light .tdisp.sleep{color:var(--blue);}
+.light .chart-tab{color:var(--hint);}
+.light .chart-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.light .btn{background:var(--surface3);color:var(--text);border-color:var(--border2);}
+.light .btn.bl{background:var(--blue);color:#fff;border-color:var(--blue);}
+.light .btn.pu{background:var(--purple);color:#fff;}
+.light .btn.re{background:var(--red);color:#fff;}
+.light .btn.te{background:var(--teal);color:#fff;}
+.light .btn.am{background:var(--amber);color:#fff;}
+.light .nav-bottom .nav-btn{color:var(--hint);}
+.light .nav-bottom .nav-btn.active{color:var(--primary);}
+.light .mehr-overlay{background:rgba(30,27,75,.45);}
 
 /* ── Theme toggle button ──────────────────────────────────── */
 #theme-toggle{
-  position:fixed;top:env(safe-area-inset-top,0);right:0;
-  background:none;border:none;padding:.7rem .9rem;font-size:18px;
-  cursor:pointer;z-index:900;opacity:.7;transition:opacity var(--t);
-  padding-top:calc(env(safe-area-inset-top,0) + .7rem);
+  position:fixed;top:calc(env(safe-area-inset-top,0) + .5rem);right:.5rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:50%;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;z-index:900;
+  box-shadow:var(--shadow-xs);opacity:.85;transition:opacity var(--t),transform var(--t);
 }
 #theme-toggle:active{opacity:1;transform:scale(1.15);}
 
@@ -461,6 +534,41 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
 
 /* ── Backup section ─────────────────────────────────────── */
 .backup-row{display:flex;gap:8px;flex-wrap:wrap;padding:.75rem 1rem;}
+
+
+/* ── Mehr bottom sheet ──────────────────────────────────────── */
+.mehr-overlay{
+  position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;transition:opacity .25s;
+}
+.mehr-overlay.hidden{display:none;}
+.mehr-overlay.visible{opacity:1;}
+.mehr-panel{
+  width:100%;max-width:430px;
+  background:var(--surface);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding:1rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+  box-shadow:var(--shadow-md);
+  transform:translateY(20px);transition:transform .25s cubic-bezier(.32,0,.67,0);
+}
+.mehr-overlay.visible .mehr-panel{transform:translateY(0);}
+.mehr-handle{width:36px;height:4px;border-radius:2px;background:var(--border2);margin:0 auto 1.25rem;}
+.mehr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;}
+.mehr-btn{
+  display:flex;flex-direction:column;align-items:center;gap:.4rem;
+  padding:.85rem .5rem;border-radius:var(--radius-md);
+  background:var(--surface2);border:1px solid var(--border);
+  cursor:pointer;color:var(--text);font-size:10px;font-family:var(--mono);
+  text-transform:uppercase;letter-spacing:.04em;
+  transition:background var(--t),transform var(--t);
+}
+.mehr-btn:active{transform:scale(.95);}
+.mehr-btn.active-page{background:var(--primary-bg);border-color:var(--primary-b);color:var(--primary);}
+.mehr-ico{font-size:22px;line-height:1;}
+
+/* ── Body safe-area top padding for status bar ──────────────── */
+html{padding-top:env(safe-area-inset-top);}
 
 </style>
 
@@ -528,16 +636,44 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
   </div>
 </div>
 
-<!-- NAV -->
-<nav class="nav" style="overflow-x:auto;scrollbar-width:none">
-  <button class="nav-btn active" onclick="showPage('home')">Tracker</button>
-  <button class="nav-btn" onclick="showPage('stats')">Statistik</button>
-  <button class="nav-btn" onclick="showPage('history')">Verlauf</button>
-  <button class="nav-btn" onclick="showPage('growth')">Wachstum</button>
-  <button class="nav-btn" onclick="showPage('milestones')">Meilensteine</button>
-  <button class="nav-btn" onclick="showPage('health')">Gesundheit</button>
-  <button class="nav-btn" onclick="showPage('routine')">Tagesplan</button>
-  <button class="nav-btn" onclick="showPage('settings')">Einstellungen</button>
+<!-- MEHR BOTTOM SHEET -->
+<div id="mehr-sheet" class="mehr-overlay hidden" onclick="closeMehr(event)">
+  <div class="mehr-panel">
+    <div class="mehr-handle"></div>
+    <div class="mehr-grid">
+      <button class="mehr-btn" data-page="growth" onclick="showPage('growth');closeMehr()">
+        <span class="mehr-ico">📏</span><span>Wachstum</span>
+      </button>
+      <button class="mehr-btn" data-page="milestones" onclick="showPage('milestones');closeMehr()">
+        <span class="mehr-ico">🏆</span><span>Meilensteine</span>
+      </button>
+      <button class="mehr-btn" data-page="routine" onclick="showPage('routine');closeMehr()">
+        <span class="mehr-ico">📅</span><span>Tagesplan</span>
+      </button>
+      <button class="mehr-btn" data-page="settings" onclick="showPage('settings');closeMehr()">
+        <span class="mehr-ico">⚙️</span><span>Einstellungen</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="nav-bottom">
+  <button class="nav-btn active" data-page="home" onclick="showPage('home')">
+    <span class="nav-ico">🏠</span><span>Tracker</span>
+  </button>
+  <button class="nav-btn" data-page="history" onclick="showPage('history')">
+    <span class="nav-ico">📋</span><span>Verlauf</span>
+  </button>
+  <button class="nav-btn" data-page="stats" onclick="showPage('stats')">
+    <span class="nav-ico">📊</span><span>Statistik</span>
+  </button>
+  <button class="nav-btn" data-page="health" onclick="showPage('health')">
+    <span class="nav-ico">💊</span><span>Gesundheit</span>
+  </button>
+  <button class="nav-btn" data-page="mehr" onclick="openMehr()">
+    <span class="nav-ico">⋯</span><span>Mehr</span>
+  </button>
 </nav>
 
 <!-- ===== HOME ===== -->
@@ -1756,8 +1892,15 @@ window.resetOnboard=()=>{if(!confirm('Onboarding zurücksetzen?'))return;CFG.onb
 window.showPage=id=>{
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.mehr-btn').forEach(b=>b.classList.remove('active-page'));
   document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.nav-btn')[{home:0,stats:1,history:2,growth:3,milestones:4,health:5,routine:6,settings:7}[id]].classList.add('active');
+  const mainBtn=document.querySelector('.nav-btn[data-page="'+id+'"]');
+  if(mainBtn){mainBtn.classList.add('active');}
+  else{
+    // It's a "Mehr" page
+    document.querySelector('.nav-btn[data-page="mehr"]')?.classList.add('active');
+    document.querySelector('.mehr-btn[data-page="'+id+'"]')?.classList.add('active-page');
+  }
   if(id==='history')renderHistory();
   if(id==='stats')renderStatsPage();
   if(id==='settings'){renderSettingsUI();addNotifSettingsRow();updateShareUI();}
@@ -2252,17 +2395,31 @@ if('serviceWorker' in navigator){
 }
 
 
+
+// ── Mehr bottom sheet ────────────────────────────────────────
+function openMehr(){
+  const s=document.getElementById('mehr-sheet');
+  s.classList.remove('hidden');
+  requestAnimationFrame(()=>s.classList.add('visible'));
+}
+function closeMehr(e){
+  if(e&&e.target!==document.getElementById('mehr-sheet'))return;
+  const s=document.getElementById('mehr-sheet');
+  s.classList.remove('visible');
+  setTimeout(()=>s.classList.add('hidden'),250);
+}
+
 // ── Theme toggle ────────────────────────────────────────────
 (function(){
+  // Default is light; apply dark only if saved
   const saved=localStorage.getItem('bt-theme');
-  if(saved==='light'){document.documentElement.classList.add('light');}
+  if(saved==='dark'){document.documentElement.classList.remove('light');}
 })();
 function toggleTheme(){
   const isLight=document.documentElement.classList.toggle('light');
   localStorage.setItem('bt-theme',isLight?'light':'dark');
   document.getElementById('theme-toggle').textContent=isLight?'☀️':'🌙';
 }
-// set initial icon
 document.addEventListener('DOMContentLoaded',()=>{
   const btn=document.getElementById('theme-toggle');
   if(btn) btn.textContent=document.documentElement.classList.contains('light')?'☀️':'🌙';
