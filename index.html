@@ -12,16 +12,31 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <script>
+  // Prevent theme flash: apply theme class before CSS loads
+  try {
+    const cfg = JSON.parse(localStorage.getItem('bt-cfg-v3') || '{}');
+    if (cfg.theme !== 'dark') document.documentElement.classList.add('light');
+  } catch(e) { document.documentElement.classList.add('light'); }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Styles (modular) -->
   <link rel="stylesheet" href="styles/themes.css">
+<style>body{opacity:0;transition:opacity .15s}</style>
+
   <link rel="stylesheet" href="styles/main.css">
   <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <!-- Module preload hints for faster boot -->
+  <link rel="modulepreload" href="src/constants.js">
+  <link rel="modulepreload" href="src/helpers.js">
+  <link rel="modulepreload" href="src/storage.js">
+  <link rel="modulepreload" href="src/config.js">
+  <link rel="modulepreload" href="src/app.js">
 </head>
 <body>
 
@@ -569,6 +584,10 @@
 </script>
 
 <!-- ── ES Module entry point ────────────────────────────────────── -->
+<script>
+  // Reveal body after a short microtask delay (theme already applied)
+  requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+</script>
 <script type="module" src="src/app.js"></script>
 
 </body>

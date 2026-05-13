@@ -147,7 +147,7 @@ export function totalSleepMs(entries) {
 
 /**
  * Filter entries to those overlapping a given calendar day.
- * DST-safe: uses calendar midnight boundaries, not 86400000ms offsets.
+ * DST-safe: uses calendar midnight boundaries, not hardcoded 86400000 ms arithmetic.
  * @param {SleepEntry[]} entries
  * @param {Date} day
  * @returns {SleepEntry[]}
