@@ -2106,5 +2106,33 @@ if(CFG.onboarded){
 if('Notification' in window && Notification.permission==='granted'){notifGranted=true;scheduleNotifs();}
 startClock();
 </script>
+
+<!-- FIX SLEEP START MODAL -->
+<div class="modal-overlay hidden" id="fix-start-modal">
+  <div class="modal">
+    <div class="modal-title">Schlafbeginn korrigieren</div>
+    <div style="font-size:11.5px;font-family:var(--mono);color:var(--hint);text-align:center;margin:-0.5rem 0 1rem">Baby schläft gerade — wann hat es wirklich angefangen?</div>
+    <div class="modal-row" style="margin-bottom:.8rem">
+      <span class="modal-lbl">Datum</span>
+      <div id="fs-day-btns" style="display:flex;gap:6px">
+        <button class="seg-btn active" data-val="today" onclick="segSelect(this,'fs-day-btns')">Heute</button>
+        <button class="seg-btn" data-val="yesterday" onclick="segSelect(this,'fs-day-btns')">Gestern</button>
+      </div>
+    </div>
+    <div class="modal-row">
+      <span class="modal-lbl">Uhrzeit</span>
+      <div class="picker-wrap">
+        <input class="picker" type="number" id="fs-h" min="0" max="23" placeholder="21">
+        <span class="picker-sep">:</span>
+        <input class="picker" type="number" id="fs-m" min="0" max="59" placeholder="30">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('fix-start-modal')">Abbrechen</button>
+      <button class="btn bl" onclick="saveFixStart()">Korrigieren</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
