@@ -7,13 +7,13 @@ import { uid } from './helpers.js';
 
 // ── Firebase Config (public — secured via RTDB Rules) ────────────────────────
 const FB_CONFIG = {
-  apiKey:            "AIzaSyCxxx_REPLACE_ME_xxx",
-  authDomain:        "baby-tracker-app.firebaseapp.com",
-  databaseURL:       "https://baby-tracker-app-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "baby-tracker-app",
-  storageBucket:     "baby-tracker-app.appspot.com",
-  messagingSenderId: "000000000000",
-  appId:             "1:000000000000:web:0000000000000000",
+  apiKey:            "AIzaSyA0JAnuaFY4RPOZu7kg4oeeDZ6oQ8J0pIk",
+  authDomain:        "baby-tracker-dd17c.firebaseapp.com",
+  databaseURL:       "https://baby-tracker-dd17c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "baby-tracker-dd17c",
+  storageBucket:     "baby-tracker-dd17c.firebasestorage.app",
+  messagingSenderId: "941022851310",
+  appId:             "1:941022851310:web:f61c69cff2cc46f712c3ff",
 };
 
 /** @type {firebase.app.App|null} */
