@@ -34,6 +34,7 @@ import {
 } from './helpers.js';
 
 import { DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS } from './constants.js';
+import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LENGTHS } from './security.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -502,7 +503,7 @@ window.addHealthEntry = async function(type) {
 
 window.addAppt = async function() {
   if (!activeChild) return;
-  const title   = $('appt-title')?.value?.trim();
+  const title   = clampStr($('appt-title')?.value?.trim() || '', MAX_LENGTHS.apptTitle);
   const dateStr = $('appt-date')?.value;
   const timeStr = $('appt-time')?.value || '00:00';
   if (!title || !dateStr) { showToast('Bitte Titel und Datum angeben.', 'error'); return; }
@@ -651,7 +652,15 @@ window.restoreJSON = function() {
     if (!file) return;
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      let data;
+      try { data = JSON.parse(text); } catch { showToast('Ungültiges JSON.', 'error'); return; }
+      // Validate before touching the database
+      const { ok, errors } = validateImport(data, file.size);
+      if (!ok) {
+        showToast('Backup ungültig: ' + errors[0], 'error');
+        console.error('[Restore] Validation errors:', errors);
+        return;
+      }
       if (!confirm('Alle Daten werden überschrieben. Fortfahren?')) return;
       await importDB(data);
       cfg = await loadCfg();
@@ -679,11 +688,12 @@ window.exportCSV = async function() {
     ...diaper.map(e => ['Windel', fmtDate(e.ts), fmtTime(e.ts), '', e.kind || '']),
   ];
 
-  const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  // csvCell() prevents CSV formula injection (= + - @ prefix)
+  const csv  = rows.map(r => r.map(c => csvCell(c)).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
-  a.download = `baby-tracker-${activeChild.name}-${toLocalDateStr(new Date())}.csv`;
+  a.download = `baby-tracker-${safeFilename(activeChild.name)}-${toLocalDateStr(new Date())}.csv`;
   a.click();
   showToast('CSV exportiert ✓');
 };

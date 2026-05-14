@@ -163,22 +163,36 @@ export function fbUnlisten(path) {
  * @returns {Promise<{synced: number, failed: number}>}
  */
 export async function syncUp() {
-  if (!fbReady || _syncing) return { synced: 0, failed: 0 };
+  if (!fbReady || _syncing) return { synced: 0, failed: 0, quarantined: 0 };
   _syncing = true;
-  let synced = 0, failed = 0;
+  let synced = 0, failed = 0, quarantined = 0;
+  const BACKOFF = [2000, 4000, 8000, 16000, 32000];
+  const MAX_RETRY = 5;
   try {
     const queue = await getPendingQueue();
+    if (!queue.length) return { synced: 0, failed: 0, quarantined: 0 };
+    // Deduplicate: for same path keep only latest write
+    const deduped = new Map();
     for (const item of queue) {
+      const ex = deduped.get(item.path);
+      if (!ex || item.createdAt > ex.createdAt) {
+        if (ex) await dequeueSync(ex.qid);
+        deduped.set(item.path, item);
+      }
+    }
+    for (const item of deduped.values()) {
+      if ((item.attempts || 0) >= MAX_RETRY) { quarantined++; continue; }
+      if (item.lastFailedAt) {
+        const delay = BACKOFF[Math.min((item.attempts||1)-1, BACKOFF.length-1)];
+        if (Date.now() - item.lastFailedAt < delay) { failed++; continue; }
+      }
       try {
-        if (item.op === 'put') {
-          await _db.ref(item.path).set(item.data);
-        } else if (item.op === 'delete') {
-          await _db.ref(item.path).remove();
-        }
+        if (item.op === 'put')    await _db.ref(item.path).set(item.data);
+        else if (item.op === 'delete') await _db.ref(item.path).remove();
         await dequeueSync(item.qid);
         synced++;
       } catch (err) {
-        console.warn('[FB] Sync item failed:', item.path, err);
+        console.warn('[FB] Sync failed:', item.path, err?.message);
         await failQueueItem(item.qid);
         failed++;
       }
@@ -186,8 +200,9 @@ export async function syncUp() {
   } finally {
     _syncing = false;
   }
-  if (synced > 0) console.info(`[FB] Synced ${synced} items, ${failed} failed.`);
-  return { synced, failed };
+  if (synced > 0 || quarantined > 0)
+    console.info(`[FB] Sync: ${synced} synced, ${failed} pending, ${quarantined} quarantined`);
+  return { synced, failed, quarantined };
 }
 
 /**

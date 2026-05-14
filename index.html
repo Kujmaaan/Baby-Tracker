@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="de" class="light">
 <head>
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net;
+    connect-src 'self'
+      https://*.firebaseio.com
+      https://*.googleapis.com
+      https://identitytoolkit.googleapis.com
+      https://securetoken.googleapis.com
+      wss://*.firebaseio.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob:;
+    worker-src 'self';
+    manifest-src 'self';
+    frame-src 'none';
+    object-src 'none';
+    base-uri 'self';
+  ">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Baby Tracker</title>
@@ -24,7 +43,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Styles (modular) -->
   <link rel="stylesheet" href="styles/themes.css">
-<style>body{opacity:0;transition:opacity .15s}</style>
+<style>
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+body{opacity:0;transition:opacity .15s}</style>
 
   <link rel="stylesheet" href="styles/main.css">
   <!-- Firebase SDK (compat) -->
@@ -35,10 +62,14 @@
   <link rel="modulepreload" href="src/constants.js">
   <link rel="modulepreload" href="src/helpers.js">
   <link rel="modulepreload" href="src/storage.js">
+  <link rel="modulepreload" href="src/migrations.js">
+  <link rel="modulepreload" href="src/security.js">
   <link rel="modulepreload" href="src/config.js">
+  <link rel="modulepreload" href="src/perf.js">
   <link rel="modulepreload" href="src/app.js">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Zum Inhalt springen</a>
 
 <!-- ── Firebase Loading Overlay ──────────────────────────────────── -->
 <div id="fb-loading" class="hidden">
@@ -113,7 +144,7 @@
   </header>
 
   <!-- ── Pages ───────────────────────────────────────────────────── -->
-  <main class="pages-container">
+  <main id="main-content" class="pages-container">
 
     <!-- HOME ──────────────────────────────────────────────────── -->
     <section class="page active" data-page="home">
@@ -161,7 +192,7 @@
       <section class="tracker-section">
         <h3 class="section-title">🍼 Fütterung</h3>
         <div class="input-row">
-          <select id="feed-type" class="input-field">
+          <select id="feed-type" class="input-field" aria-label="Fütterungsart">
             <option value="Brust">Brust</option>
             <option value="Flasche">Flasche</option>
             <option value="Beikost">Beikost</option>
@@ -174,7 +205,7 @@
       <section class="tracker-section">
         <h3 class="section-title">🧷 Windel</h3>
         <div class="input-row">
-          <select id="diaper-type" class="input-field">
+          <select id="diaper-type" class="input-field" aria-label="Windelart">
             <option value="Nass">Nass</option>
             <option value="Schmutzig">Schmutzig</option>
             <option value="Beides">Beides</option>
@@ -224,7 +255,7 @@
       <!-- Date filter -->
       <div class="filter-row">
         <input type="date" id="verlauf-date" class="input-field" onchange="filterVerlauf(this.value)">
-        <select id="verlauf-type" class="input-field" onchange="filterVerlauf()">
+        <select id="verlauf-type" class="input-field" aria-label="Eintragstyp" onchange="filterVerlauf()">
           <option value="all">Alle</option>
           <option value="sleep">Schlaf</option>
           <option value="feed">Fütterung</option>
@@ -290,7 +321,7 @@
         <h3 class="section-title">🏥 Arzttermine</h3>
         <div id="appt-list" class="log-list"></div>
         <div class="appt-form">
-          <input type="text" id="appt-title" class="input-field" placeholder="Termin (z.B. U5)">
+          <input type="text" id="appt-title" class="input-field" placeholder="Termin (z.B. U5)" maxlength="100">
           <input type="date" id="appt-date" class="input-field">
           <input type="time" id="appt-time" class="input-field" value="10:00">
           <button class="btn btn-primary" onclick="addAppt()">Hinzufügen</button>
@@ -303,7 +334,7 @@
       <h2 class="page-title">Tagesplan</h2>
       <div class="tagesplan-form">
         <input type="time" id="tp-time" class="input-field" value="08:00">
-        <input type="text" id="tp-label" class="input-field" placeholder="Aktivität">
+        <input type="text" id="tp-label" class="input-field" placeholder="Aktivität" maxlength="100">
         <button class="btn btn-primary" onclick="addTagesplan()">+</button>
       </div>
       <div id="tagesplan-list" class="log-list">
@@ -401,7 +432,7 @@
     <h3 class="modal-title">👶 Kind hinzufügen</h3>
     <div class="form-row">
       <label for="new-child-name">Name *</label>
-      <input type="text" id="new-child-name" class="input-field" placeholder="z.B. Lena" autocomplete="off">
+      <input type="text" id="new-child-name" class="input-field" placeholder="z.B. Lena" autocomplete="off" maxlength="50">
     </div>
     <div class="form-row">
       <label for="new-child-gender">Geschlecht</label>
@@ -437,7 +468,7 @@
     </div>
     <div class="form-row">
       <label>Menge (ml)</label>
-      <input type="number" id="modal-feed-amount" class="input-field" placeholder="z.B. 120" min="0" max="500">
+      <input type="number" id="modal-feed-amount" class="input-field" placeholder="z.B. 120" min="0" max="500" step="1">
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('feed-modal')">Abbrechen</button>

@@ -837,3 +837,57 @@ html{padding-top:env(safe-area-inset-top);}
 .no-child { display:none; }
 .no-child.visible { display:block; }
 
+
+/* ── Accessibility & PWA improvements ───────────────────────────────────── */
+
+/* Skip-to-content link (for keyboard users) */
+.skip-link {
+  position:absolute; top:-40px; left:0; background:var(--primary,#8b5cf6);
+  color:#fff; padding:8px 16px; border-radius:0 0 8px 0; z-index:9999;
+  font-size:.9rem; font-weight:600; text-decoration:none;
+}
+.skip-link:focus { top:0; }
+
+/* Focus states — visible on all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--primary, #8b5cf6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--primary, #8b5cf6);
+  outline-offset: 2px;
+}
+
+/* Touch targets: minimum 44×44px (WCAG 2.5.5) */
+.nav-btn     { min-height: 44px; min-width: 44px; }
+.quick-btn   { min-height: 52px; }
+.icon-btn    { min-height: 36px; min-width: 36px; }
+.seg-btn     { min-height: 36px; }
+.btn         { min-height: 44px; }
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.skeleton {
+  background: var(--border);
+  border-radius: 8px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.skeleton-text  { height: 1em; margin-bottom: .5em; }
+.skeleton-card  { height: 80px; border-radius: 16px; margin-bottom: 12px; }
+.skeleton-btn   { height: 44px; border-radius: 12px; }
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .nav-btn.active, .seg-btn.active { border: 2px solid ButtonText; }
+  .child-card { border: 2px solid ButtonText; }
+}
+
+/* PWA standalone: hide browser chrome-dependent UI */
+@media (display-mode: standalone) {
+  .hint a[href*="github"] { display: none; }
+}

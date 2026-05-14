@@ -3,9 +3,10 @@
 // Offline queue: stores pending writes; sync engine flushes on reconnect.
 
 import { uid } from './helpers.js';
+import { runMigrations, attachVersionChangeHandler, checkIntegrity, CURRENT_DB_VERSION } from './migrations.js';
 
 const DB_NAME  = 'baby-tracker-db';
-const DB_VER   = 1;
+const DB_VER   = CURRENT_DB_VERSION; // drives from migrations.js
 
 // Object store names
 const STORES = {
@@ -35,37 +36,59 @@ export function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VER);
 
     req.onupgradeneeded = (e) => {
-      const db = e.target.result;
+      const db  = e.target.result;
+      const tx  = e.target.transaction;
+      const old = e.oldVersion;
+      const nw  = e.newVersion;
 
-      // Config: key-value
-      if (!db.objectStoreNames.contains(STORES.CFG)) {
-        db.createObjectStore(STORES.CFG); // out-of-line key
-      }
-
-      // Entry stores: all use auto-generated `id`, indexed by childId + ts
-      const entryStores = [
-        STORES.SLEEP, STORES.FEED, STORES.DIAPER,
-        STORES.HEALTH, STORES.MILESTONE, STORES.APPT,
-        STORES.MEAL, STORES.TAGESPLAN,
-      ];
-      for (const name of entryStores) {
-        if (!db.objectStoreNames.contains(name)) {
-          const store = db.createObjectStore(name, { keyPath: 'id' });
-          store.createIndex('byChild', 'childId', { unique: false });
-          store.createIndex('byChildTs', ['childId', 'ts'], { unique: false });
-          store.createIndex('byTs', 'ts', { unique: false });
+      // v1: initial schema (run if fresh install)
+      if (old < 1) {
+        // Config: key-value
+        if (!db.objectStoreNames.contains(STORES.CFG)) {
+          db.createObjectStore(STORES.CFG);
+        }
+        // Entry stores
+        const entryStores = [
+          STORES.SLEEP, STORES.FEED, STORES.DIAPER,
+          STORES.HEALTH, STORES.MILESTONE, STORES.APPT,
+          STORES.MEAL, STORES.TAGESPLAN,
+        ];
+        for (const name of entryStores) {
+          if (!db.objectStoreNames.contains(name)) {
+            const store = db.createObjectStore(name, { keyPath: 'id' });
+            store.createIndex('byChild', 'childId', { unique: false });
+            store.createIndex('byChildTs', ['childId', 'ts'], { unique: false });
+            store.createIndex('byTs', 'ts', { unique: false });
+          }
+        }
+        // Sync queue
+        if (!db.objectStoreNames.contains(STORES.QUEUE)) {
+          const q = db.createObjectStore(STORES.QUEUE, { keyPath: 'qid' });
+          q.createIndex('byStatus', 'status', { unique: false });
         }
       }
 
-      // Sync queue
-      if (!db.objectStoreNames.contains(STORES.QUEUE)) {
-        const q = db.createObjectStore(STORES.QUEUE, { keyPath: 'qid' });
-        q.createIndex('byStatus', 'status', { unique: false });
+      // Run any pending migrations (v2, v3, ...)
+      if (old >= 1) {
+        runMigrations(db, tx, old, nw);
+      } else if (nw > 1) {
+        // Fresh install — run v2+ migrations immediately
+        runMigrations(db, tx, 1, nw);
       }
     };
 
-    req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
+    req.onsuccess = (e) => {
+      _db = e.target.result;
+      attachVersionChangeHandler(_db);
+      const issues = checkIntegrity(_db);
+      if (issues.length) console.warn('[DB] Integrity issues:', issues);
+      resolve(_db);
+    };
     req.onerror   = (e) => reject(e.target.error);
+    req.onblocked  = () => {
+      console.error('[DB] Database upgrade blocked — another tab is open.');
+      // attachVersionChangeHandler will handle the other tab
+    };
   });
 }
 
@@ -350,7 +373,8 @@ export async function failQueueItem(qid) {
       const item = req.result;
       if (!item) { resolve(); return; }
       item.attempts++;
-      item.status = item.attempts >= 5 ? 'failed' : 'pending';
+      item.lastFailedAt = Date.now();
+      item.status = item.attempts >= 5 ? 'quarantined' : 'pending';
       store.put(item);
       tx.oncomplete = resolve;
     };

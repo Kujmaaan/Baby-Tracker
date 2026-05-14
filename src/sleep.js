@@ -268,3 +268,127 @@ export function renderSleepItem(entry, onDelete, onEdit) {
       </div>
     </div>`;
 }
+
+// ── Split sleep across day boundaries ────────────────────────────────────────
+
+/**
+ * Split a sleep entry that crosses midnight into segments per calendar day.
+ * Each segment has the same id but scoped timestamps.
+ * Used for per-day statistics — does NOT mutate the original entry.
+ * @param {SleepEntry} entry
+ * @returns {Array<{date: string, ms: number}>}  segments
+ */
+export function splitSleepAcrossDays(entry) {
+  if (!entry.end) return [];
+  const segments = [];
+  let cursor = entry.ts;
+  while (cursor < entry.end) {
+    const d = new Date(cursor);
+    const dayEnd = endOfDay(d);
+    const segEnd = Math.min(entry.end, dayEnd);
+    segments.push({
+      date: toLocalDateStr(d),
+      ms:   segEnd - cursor,
+    });
+    // Move to start of next calendar day (DST-safe)
+    const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+    cursor = next.getTime();
+  }
+  return segments;
+}
+
+// ── Active sleep guard ────────────────────────────────────────────────────────
+
+/**
+ * Check if there is already an open (active) sleep entry for a child.
+ * Returns the active entry or null.
+ * @param {SleepEntry[]} entries
+ * @returns {SleepEntry|null}
+ */
+export function findActiveSleep(entries) {
+  return entries.find(e => !e.end) || null;
+}
+
+/**
+ * Guard: prevent starting a new sleep when one is already active.
+ * Returns an error message or null if safe to proceed.
+ * @param {SleepEntry[]} entries
+ * @returns {string|null}
+ */
+export function activeSleepGuard(entries) {
+  const active = findActiveSleep(entries);
+  if (active) {
+    return `Schlaf läuft bereits seit ${fmtTime(active.ts)}. Bitte zuerst beenden.`;
+  }
+  return null;
+}
+
+// ── Overlap detection ─────────────────────────────────────────────────────────
+
+/**
+ * Detect overlapping sleep entries (completed entries only).
+ * Returns pairs of overlapping [a, b] entry IDs.
+ * @param {SleepEntry[]} entries
+ * @returns {Array<[string, string]>}
+ */
+export function detectSleepOverlaps(entries) {
+  const completed = entries.filter(e => e.end).sort((a, b) => a.ts - b.ts);
+  const overlaps = [];
+  for (let i = 0; i < completed.length - 1; i++) {
+    const a = completed[i];
+    for (let j = i + 1; j < completed.length; j++) {
+      const b = completed[j];
+      if (b.ts >= a.end) break; // sorted by ts, no more overlaps possible
+      overlaps.push([a.id, b.id]);
+    }
+  }
+  return overlaps;
+}
+
+// ── DST Test cases (for automated testing) ───────────────────────────────────
+// Run via: node --input-type=module src/sleep.test.js
+
+export const TEST_CASES = [
+  {
+    label: 'Normal sleep',
+    entry: { id:'t1', childId:'c1', ts: new Date('2024-06-15T22:00:00').getTime(),
+             end: new Date('2024-06-16T06:00:00').getTime() },
+    expect: { valid: true, crossesMidnight: true, durationH: 8 },
+  },
+  {
+    label: 'DST spring forward (March — clocks +1h)',
+    // In Europe 31.03.2024 02:00 → 03:00, so this night is only 7 real hours
+    entry: { id:'t2', childId:'c1', ts: new Date('2024-03-30T22:00:00').getTime(),
+             end: new Date('2024-03-31T06:00:00').getTime() },
+    expect: { valid: true, crossesMidnight: true },
+  },
+  {
+    label: 'DST fall back (October — clocks -1h)',
+    entry: { id:'t3', childId:'c1', ts: new Date('2024-10-26T22:00:00').getTime(),
+             end: new Date('2024-10-27T07:00:00').getTime() },
+    expect: { valid: true, crossesMidnight: true },
+  },
+  {
+    label: '23:59 → 00:01 short sleep',
+    entry: { id:'t4', childId:'c1', ts: new Date('2024-06-15T23:59:00').getTime(),
+             end: new Date('2024-06-16T00:01:00').getTime() },
+    expect: { valid: true, crossesMidnight: true, durationMin: 2 },
+  },
+  {
+    label: 'Future start (invalid)',
+    entry: { id:'t5', childId:'c1', ts: Date.now() + 3_600_000 },
+    expect: { valid: false },
+  },
+  {
+    label: 'Negative duration (end before start)',
+    entry: { id:'t6', childId:'c1', ts: new Date('2024-06-15T08:00:00').getTime(),
+             end: new Date('2024-06-15T07:00:00').getTime() },
+    expect: { valid: false },
+  },
+  {
+    label: 'Too long (25h)',
+    entry: { id:'t7', childId:'c1', ts: new Date('2024-06-15T00:00:00').getTime(),
+             end: new Date('2024-06-16T01:00:00').getTime() },
+    expect: { valid: false },
+  },
+];
