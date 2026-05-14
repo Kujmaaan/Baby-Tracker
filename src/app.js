@@ -167,8 +167,19 @@ async function showPage(pageId) {
 
 async function renderHome() {
   if (!activeChild) { renderNoChild('home'); return; }
-  const today = new Date();
-  const sleepEntries = await getEntriesByChild(STORES.SLEEP, activeChild.id);
+  const today    = new Date();
+  const todayStart = startOfDay(today);
+  const todayEnd   = endOfDay(today);
+  // 48h window covers: sleep started yesterday and still open (crosses midnight),
+  // plus all of today — avoids full-table scan of all entries ever.
+  const sleep48hStart = todayStart - 48 * 3600_000;
+
+  const [sleepEntries, feedEntries, diaperEntries] = await Promise.all([
+    getEntriesByChildRange(STORES.SLEEP,  activeChild.id, sleep48hStart, todayEnd),
+    getEntriesByChildRange(STORES.FEED,   activeChild.id, todayStart,    todayEnd),
+    getEntriesByChildRange(STORES.DIAPER, activeChild.id, todayStart,    todayEnd),
+  ]);
+
   const todaysSleep  = sleepEntriesForDay(sleepEntries, today);
   const totalSleepMs = todaysSleep.reduce((s, e) => s + (sleepDuration(e) || 0), 0);
   const currentSleep = sleepEntries.find(isSleeping);
@@ -177,15 +188,11 @@ async function renderHome() {
   const elSleep = $('home-sleep');
   if (elSleep) elSleep.textContent = fmtDur(totalSleepMs) || '—';
 
-  const feedEntries = await getEntriesByChild(STORES.FEED, activeChild.id);
-  const todaysFeed  = feedEntries.filter(e => e.ts >= startOfDay(today));
   const elFeed = $('home-feed');
-  if (elFeed) elFeed.textContent = todaysFeed.length || 0;
+  if (elFeed) elFeed.textContent = feedEntries.length || 0;
 
-  const diaperEntries = await getEntriesByChild(STORES.DIAPER, activeChild.id);
-  const todaysDiaper  = diaperEntries.filter(e => e.ts >= startOfDay(today));
   const elDiaper = $('home-diaper');
-  if (elDiaper) elDiaper.textContent = todaysDiaper.length || 0;
+  if (elDiaper) elDiaper.textContent = diaperEntries.length || 0;
 
   // Child name & age
   const elName = $('home-child-name');
