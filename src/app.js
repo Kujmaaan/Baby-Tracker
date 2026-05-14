@@ -37,6 +37,7 @@ import {
 import { DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS } from './constants.js';
 import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LENGTHS } from './security.js';
 import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTrackedListener, cleanupAllListeners, PAGE_SIZE } from './perf.js';
+import { takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot, getSnapshot, clearSnapshot } from './restore.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -648,8 +649,8 @@ window.backupJSON = async function() {
 
 window.restoreJSON = function() {
   const inp = document.createElement('input');
-  inp.type  = 'file';
-  inp.accept= '.json';
+  inp.type   = 'file';
+  inp.accept = '.json';
   inp.onchange = async e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -657,24 +658,109 @@ window.restoreJSON = function() {
       const text = await file.text();
       let data;
       try { data = JSON.parse(text); } catch { showToast('Ungültiges JSON.', 'error'); return; }
-      // Validate before touching the database
+
+      // 1. Security validation
       const { ok, errors } = validateImport(data, file.size);
       if (!ok) {
         showToast('Backup ungültig: ' + errors[0], 'error');
-        console.error('[Restore] Validation errors:', errors);
         return;
       }
-      if (!confirm('Alle Daten werden überschrieben. Fortfahren?')) return;
-      await importDB(data);
-      cfg = await loadCfg();
-      activeChild = await getActiveChild();
-      showToast('Backup wiederhergestellt ✓');
-      await showPage(currentPage);
+
+      // 2. Preview diff — show what will change
+      const preview = await previewRestore(data);
+      window._restoreData = data; // stash for modal confirm
+      showRestorePreviewModal(preview);
     } catch (err) {
-      showToast('Fehler beim Wiederherstellen: ' + err.message, 'error');
+      showToast('Fehler: ' + err.message, 'error');
     }
   };
   inp.click();
+};
+
+function showRestorePreviewModal(preview) {
+  const warnings = preview.warnings.map(w => `<p class="restore-warning">${w}</p>`).join('');
+  const stats = preview.storeStats
+    .filter(s => s.inBackup > 0 || s.inDB > 0)
+    .map(s => `<tr><td>${s.store}</td><td>${s.inDB}</td><td>${s.inBackup}</td><td class="text-green">+${s.new}</td><td class="text-yellow">${s.conflicts}</td></tr>`)
+    .join('');
+
+  const html = `
+    <div id="restore-preview-modal" class="modal-overlay" role="dialog" aria-modal="true">
+      <div class="modal-card" style="max-width:480px">
+        <h3>📦 Backup-Vorschau</h3>
+        ${warnings}
+        <p>Backup-Datum: <strong>${data => data.exportedAt ? new Date(data.exportedAt).toLocaleString('de-DE') : 'Unbekannt'}</strong></p>
+        <table class="restore-table" style="width:100%;font-size:.8rem;margin:.75rem 0">
+          <thead><tr><th>Store</th><th>Aktuell</th><th>Backup</th><th>Neu</th><th>Konflikte</th></tr></thead>
+          <tbody>${stats}</tbody>
+        </table>
+        <p style="font-size:.8rem;color:var(--text-muted)">
+          ${preview.newEntries} neue Einträge · ${preview.duplicates} Duplikate · ${preview.conflicts} Konflikte
+        </p>
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:1rem">
+          <button class="btn-primary" onclick="confirmRestore('overwrite')">
+            🔄 Überschreiben (alle Daten ersetzen)
+          </button>
+          <button class="btn-secondary" onclick="confirmRestore('merge')">
+            🔀 Zusammenführen (nur neue hinzufügen)
+          </button>
+          <button class="btn-danger" onclick="closeRestoreModal()">Abbrechen</button>
+        </div>
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:.5rem">
+          ℹ️ Vor dem Restore wird automatisch ein Sicherungs-Snapshot erstellt.
+        </p>
+      </div>
+    </div>`;
+
+  // Substitute exportedAt
+  const filled = html.replace(
+    'data => data.exportedAt ? new Date(data.exportedAt).toLocaleString('de-DE') : 'Unbekannt'',
+    window._restoreData?.exportedAt ? new Date(window._restoreData.exportedAt).toLocaleString('de-DE') : 'Unbekannt'
+  );
+  const div = document.createElement('div');
+  div.innerHTML = filled;
+  document.body.appendChild(div.firstElementChild);
+}
+
+window.closeRestoreModal = function() {
+  document.getElementById('restore-preview-modal')?.remove();
+  delete window._restoreData;
+};
+
+window.confirmRestore = async function(mode) {
+  const data = window._restoreData;
+  if (!data) return;
+  window.closeRestoreModal();
+
+  showToast('Restore läuft…');
+  const result = await safeRestore(data, mode, (step, total, label) => {
+    console.info(`[Restore] ${step}/${total}: ${label}`);
+  });
+
+  if (result.success) {
+    cfg         = await loadCfg();
+    activeChild = await getActiveChild();
+    const msg   = mode === 'merge'
+      ? `Zusammengeführt: ${result.restored} neu, ${result.skipped} übersprungen, ${result.conflicts} Konflikte gelöst ✓`
+      : `Wiederhergestellt: ${result.restored} Einträge ✓`;
+    showToast(msg);
+    await showPage(currentPage);
+  } else {
+    showToast('Restore fehlgeschlagen — Daten unverändert.', 'error');
+    result.errors.forEach(e => console.error('[Restore]', e));
+  }
+};
+
+window.rollbackRestore = async function() {
+  if (!getSnapshot()) { showToast('Kein Snapshot verfügbar.', 'error'); return; }
+  if (!confirm('Zum letzten Snapshot zurückkehren?')) return;
+  const result = await rollbackToSnapshot();
+  showToast(result.message, result.success ? 'success' : 'error');
+  if (result.success) {
+    cfg = await loadCfg();
+    activeChild = await getActiveChild();
+    await showPage(currentPage);
+  }
 };
 
 // ── CSV Export ────────────────────────────────────────────────────────────────

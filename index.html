@@ -66,6 +66,7 @@ body{opacity:0;transition:opacity .15s}</style>
   <link rel="modulepreload" href="src/security.js">
   <link rel="modulepreload" href="src/config.js">
   <link rel="modulepreload" href="src/perf.js">
+  <link rel="modulepreload" href="src/restore.js">
   <link rel="modulepreload" href="src/app.js">
 </head>
 <body>
@@ -367,7 +368,7 @@ body{opacity:0;transition:opacity .15s}</style>
         <h3 class="section-title">💾 Backup & Restore</h3>
         <div class="btn-row">
           <button class="btn btn-secondary" onclick="backupJSON()">📦 Backup</button>
-          <button class="btn btn-secondary" onclick="restoreJSON()">♻️ Wiederherstellen</button>
+          <button class="btn btn-secondary" onclick="restoreJSON()" id="restore-btn">♻️ Wiederherstellen</button>
         </div>
       </section>
       <!-- Version info -->

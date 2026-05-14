@@ -891,3 +891,46 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (display-mode: standalone) {
   .hint a[href*="github"] { display: none; }
 }
+
+/* ── Restore Preview Modal ─────────────────────────────────────────────────── */
+.restore-table {
+  border-collapse: collapse;
+  font-size: .8rem;
+}
+.restore-table th,
+.restore-table td {
+  padding: .25rem .5rem;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.restore-table th { background: var(--surface-2); font-weight: 600; }
+.restore-warning {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: .4rem .75rem;
+  border-radius: 4px;
+  font-size: .85rem;
+  color: #92400e;
+  margin: .25rem 0;
+}
+[data-theme="dark"] .restore-warning {
+  background: #451a03;
+  color: #fcd34d;
+}
+.text-green  { color: #16a34a; }
+.text-yellow { color: #d97706; }
+[data-theme="dark"] .text-green  { color: #4ade80; }
+[data-theme="dark"] .text-yellow { color: #fbbf24; }
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: .65rem 1.25rem;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background .2s;
+}
+.btn-danger:hover { background: #b91c1c; }
