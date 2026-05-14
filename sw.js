@@ -1,11 +1,11 @@
-// ─── Service Worker v24 — baby-tracker ───────────────────────────────────────
+// ─── Service Worker v25 — baby-tracker ───────────────────────────────────────
 // Strategy:
 //   • App shell (HTML/JS/CSS/manifest) → Network-first, fallback to cache
 //   • Google Fonts                     → Cache-first (immutable)
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v24';
+const CACHE_VER   = 'baby-tracker-v25';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -29,6 +29,7 @@ const APP_SHELL = [
   './src/tombstone.js',
   './src/conflict.js',
   './src/growth.js',
+  './src/notif.js',
   './src/debug.js',
 ];
 
@@ -120,7 +121,50 @@ self.addEventListener('sync', e => {
   }
 });
 
+// ── Notification click: open / focus app and navigate to target page ─────────
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const page = event.notification.data?.page || 'home';
+  const url  = self.registration.scope + (page !== 'home' ? `?page=${page}` : '');
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const existing = clients.find(c => c.url.startsWith(self.registration.scope));
+      if (existing) {
+        existing.focus();
+        existing.postMessage({ type: 'NAVIGATE', page });
+      } else {
+        self.clients.openWindow(url);
+      }
+    })
+  );
+});
+
+// ── Push: skeleton for future FCM integration ─────────────────────────────────
+self.addEventListener('push', event => {
+  if (!event.data) return;
+  try {
+    const { title, body, tag, page } = event.data.json();
+    event.waitUntil(
+      self.registration.showNotification(title || 'Baby Tracker', {
+        body:    body || '',
+        tag:     tag  || 'bt-push',
+        icon:    '/assets/icons/icon-192.png',
+        badge:   '/assets/icons/icon-192.png',
+        vibrate: [200, 100, 200],
+        data:    { page: page || 'home' },
+      })
+    );
+  } catch { /* non-JSON push — ignore */ }
+});
+
 // ── SW Update: activate on demand ────────────────────────────────────────────
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'NAVIGATE') {
+    // Relayed by notificationclick when app was already open
+    self.clients.matchAll({ type: 'window' }).then(clients =>
+      clients.forEach(c => c.postMessage(event.data))
+    );
+  }
 });

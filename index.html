@@ -75,6 +75,7 @@ body{opacity:0;transition:opacity .15s}</style>
   <link rel="modulepreload" href="src/conflict.js">
   <link rel="modulepreload" href="src/tombstone.js">
   <link rel="modulepreload" href="src/growth.js">
+  <link rel="modulepreload" href="src/notif.js">
   <link rel="modulepreload" href="src/restore.js">
   <link rel="modulepreload" href="src/debug.js">
   <link rel="modulepreload" href="src/app.js">
@@ -395,6 +396,29 @@ body{opacity:0;transition:opacity .15s}</style>
           <button class="btn btn-secondary" onclick="backupJSON()">📦 Backup</button>
           <button class="btn btn-secondary" onclick="restoreJSON()" id="restore-btn">♻️ Wiederherstellen</button>
         </div>
+      </section>
+      <!-- Reminders -->
+      <section class="settings-section">
+        <h3 class="section-title">🔔 Erinnerungen</h3>
+        <div class="form-row">
+          <label for="feed-reminder-interval">Fütterungs-Erinnerung</label>
+          <select id="feed-reminder-interval" class="input-field" onchange="setFeedReminder(this.value)">
+            <option value="0">Aus</option>
+            <option value="7200000">Alle 2 Stunden</option>
+            <option value="10800000">Alle 3 Stunden</option>
+            <option value="14400000">Alle 4 Stunden</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin-top:10px">
+          <label for="sleep-reminder-threshold">Schlaf-Warnung</label>
+          <select id="sleep-reminder-threshold" class="input-field" onchange="setSleepReminder(this.value)">
+            <option value="0">Aus</option>
+            <option value="7200000">Nach 2 Stunden</option>
+            <option value="10800000">Nach 3 Stunden</option>
+            <option value="14400000">Nach 4 Stunden</option>
+          </select>
+        </div>
+        <p class="hint" style="margin-top:6px">Benachrichtigungen müssen erlaubt sein.</p>
       </section>
       <!-- Version info -->
       <section class="settings-section">

@@ -42,6 +42,12 @@ import { initSyncRevision } from './conflict.js';
 import { softDelete, filterDeleted, getActiveEntries, getRecentlyDeleted, purgeTombstones } from './tombstone.js';
 import { openDebugPanel, attachDebugTrigger, isDebugMode, startQuarantineMonitor } from './debug.js';
 import { renderGrowthSVG, buildGrowthList } from './growth.js';
+import {
+  showNotification, scheduleApptReminder, cancelApptReminder,
+  startFeedingReminder, stopFeedingReminder, getFeedIntervalMs,
+  startSleepMonitor, stopSleepMonitor, getSleepThresholdMs,
+  initReminders,
+} from './notif.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -523,20 +529,14 @@ window.addAppt = async function() {
 };
 
 window.deleteAppt = async function(id) {
+  cancelApptReminder(id);
   const _aPath = fbPath(STORES.APPT, id).replace('/' + id, '');
   await softDelete(STORES.APPT, id, _aPath, DEVICE_ID);
   await renderGesundheit();
 };
 
 function scheduleApptNotif(entry) {
-  const delay = entry.ts - Date.now() - 24 * 3600 * 1000;
-  if (delay > 0 && delay < 7 * 24 * 3600 * 1000) {
-    setTimeout(() => {
-      if (Notification.permission === 'granted') {
-        new Notification('🏥 Arzttermin morgen', { body: entry.title });
-      }
-    }, delay);
-  }
+  scheduleApptReminder(entry);
 }
 
 // ── Tagesplan ─────────────────────────────────────────────────────────────────
@@ -625,6 +625,31 @@ window.saveNewChild = async function() {
   closeModal('add-child-modal');
   showToast(`${child.name} hinzugefügt ✓`);
   await renderSettings();
+};
+
+// ── Reminder settings UI ──────────────────────────────────────────────────────
+
+function renderReminderSettings() {
+  const feedSel  = $('feed-reminder-interval');
+  const sleepSel = $('sleep-reminder-threshold');
+  if (feedSel)  feedSel.value  = String(getFeedIntervalMs());
+  if (sleepSel) sleepSel.value = String(getSleepThresholdMs());
+}
+
+window.setFeedReminder = async function(val) {
+  const ms = parseInt(val, 10) || 0;
+  if (ms) await startFeedingReminder(ms);
+  else stopFeedingReminder();
+};
+
+window.setSleepReminder = async function(val) {
+  const ms = parseInt(val, 10) || 0;
+  const getSleepStart = () => {
+    try { return JSON.parse(localStorage.getItem('bt_active_sleep') || 'null')?.ts ?? null; }
+    catch { return null; }
+  };
+  if (ms) await startSleepMonitor(ms, getSleepStart);
+  else stopSleepMonitor();
 };
 
 // ── Theme toggle ──────────────────────────────────────────────────────────────
@@ -1205,7 +1230,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     });
+
+    // Navigate to page when notification is clicked (SW sends NAVIGATE message)
+    navigator.serviceWorker.addEventListener('message', async event => {
+      if (event.data?.type === 'NAVIGATE' && event.data.page) {
+        await showPage(event.data.page);
+      }
+    });
   }
+
+  // Restore reminder settings from last session
+  const getSleepStart = () => {
+    try {
+      const open = JSON.parse(localStorage.getItem('bt_active_sleep') || 'null');
+      return open?.ts ?? null;
+    } catch { return null; }
+  };
+  await initReminders(getSleepStart);
+
+  // Load reminder settings into UI
+  renderReminderSettings();
 });
 
 // Activate new SW on user request
