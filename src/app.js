@@ -39,6 +39,7 @@ import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LEN
 import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTrackedListener, cleanupAllListeners, PAGE_SIZE } from './perf.js';
 import { takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot, getSnapshot, clearSnapshot } from './restore.js';
 import { softDelete, filterDeleted, getActiveEntries, getRecentlyDeleted, purgeTombstones } from './tombstone.js';
+import { openDebugPanel, attachDebugTrigger, isDebugMode } from './debug.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -862,6 +863,7 @@ function showToast(msg, type = 'info') {
   toast._timer = setTimeout(() => toast.classList.remove('show'), 3000);
 }
 window.showToast = showToast;
+window.openDebugPanel = openDebugPanel;
 
 /** Show a toast with an Undo action (5 seconds). */
 function showUndoToast(msg, undoFn) {
@@ -1175,6 +1177,16 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateHeaderChildName, 600);
   // Garbage-collect tombstones older than 30 days
   setTimeout(() => purgeTombstones().catch(console.warn), 5000);
+
+  // Debug panel — 5× tap on version text or ?debug=1
+  const versionEl = document.querySelector('.settings-section .hint');
+  if (versionEl) attachDebugTrigger(versionEl);
+  if (isDebugMode()) {
+    const dbgBadge = document.createElement('span');
+    dbgBadge.textContent = ' [DEBUG]';
+    dbgBadge.style.cssText = 'color:var(--accent,#e86);font-weight:700;font-size:.75em;';
+    versionEl?.appendChild(dbgBadge);
+  }
 
   // Online/Offline body class for offline-indicator CSS
   const setOnlineState = () => {
