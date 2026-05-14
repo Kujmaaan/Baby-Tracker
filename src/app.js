@@ -25,6 +25,7 @@ import {
   sleepDuration, isSleeping, crossesMidnight,
   dailySleepTotals, sleepEntriesForDay, sleepMsForDay,
   parseFixStart,
+  activeSleepGuard,
 } from './sleep.js';
 
 import {
@@ -35,9 +36,11 @@ import {
 
 import { DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS } from './constants.js';
 import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LENGTHS } from './security.js';
+import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTrackedListener, cleanupAllListeners, PAGE_SIZE } from './perf.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
+let _verlaufPage = 0; // current pagination page for Verlauf (perf.js)
 let activeChild  = null;
 let currentPage  = 'home';
 let isOnline     = navigator.onLine;
@@ -259,7 +262,9 @@ window.toggleSleep = async function() {
     await fbWriteEntry(STORES.SLEEP, updated);
     showToast(`Aufgewacht! Geschlafen: ${fmtDur(end - ongoing.ts)}`);
   } else {
-    // Start sleep
+    // Start sleep — guard against duplicate open sessions
+    const guard = activeSleepGuard(entries);
+    if (guard) { showToast(guard, 'error'); return; }
     const entry = await addEntry(STORES.SLEEP, {
       childId: activeChild.id,
       ts:      Date.now(),
@@ -314,26 +319,24 @@ window.saveFixStart = async function() {
 
 async function renderStats() {
   if (!activeChild) { renderNoChild('stats'); return; }
-  const sleepEntries  = await getEntriesByChild(STORES.SLEEP,  activeChild.id);
-  const feedEntries   = await getEntriesByChild(STORES.FEED,   activeChild.id);
-  const diaperEntries = await getEntriesByChild(STORES.DIAPER, activeChild.id);
 
-  const today   = new Date();
-  const weekAgo = new Date(); weekAgo.setDate(today.getDate() - 7);
-
-  const weekSleep  = sleepEntries.filter(e => e.ts >= weekAgo.getTime());
-  const weekFeed   = feedEntries.filter(e => e.ts >= weekAgo.getTime());
-  const weekDiaper = diaperEntries.filter(e => e.ts >= weekAgo.getTime());
-
-  const totalMs = weekSleep.reduce((s, e) => s + (sleepDuration(e) || 0), 0);
+  // getDailySummaries uses indexed range queries only (no full-table scans)
+  const summaries    = await getDailySummaries(activeChild.id, 7);
+  const totalMs      = summaries.reduce((s, d) => s + d.sleepMs, 0);
+  const totalFeed    = summaries.reduce((s, d) => s + d.feeds,   0);
+  const totalDiaper  = summaries.reduce((s, d) => s + d.diapers, 0);
 
   const elTotalSleep  = $('total-sleep');
   const elTotalFeed   = $('total-feed');
   const elTotalDiaper = $('total-diaper');
   if (elTotalSleep)  elTotalSleep.textContent  = fmtDur(totalMs) || '—';
-  if (elTotalFeed)   elTotalFeed.textContent   = weekFeed.length;
-  if (elTotalDiaper) elTotalDiaper.textContent = weekDiaper.length;
+  if (elTotalFeed)   elTotalFeed.textContent   = totalFeed;
+  if (elTotalDiaper) elTotalDiaper.textContent = totalDiaper;
 
+  // Bar chart still needs per-entry data — fetch last 7 days only via range
+  const now      = new Date();
+  const weekAgo  = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  const sleepEntries = await getEntriesByChildRange(STORES.SLEEP, activeChild.id, startOfDay(weekAgo), endOfDay(now));
   renderSleepBarChart(sleepEntries);
 }
 
@@ -378,7 +381,7 @@ async function renderVerlauf() {
 
 async function renderWachstum() {
   if (!activeChild) { renderNoChild('wachstum'); return; }
-  renderGrowthChart('weight');
+  lazyRenderChart('growth-svg', () => renderGrowthChart('weight'));
 }
 
 function renderGrowthChart(type) {
@@ -881,6 +884,7 @@ async function renderVerlauf() {
 
 window._app.filterVerlauf = filterVerlauf;
 async function filterVerlauf(dateOverride) {
+  _verlaufPage = 0; // reset pagination on fresh filter
   if (!activeChild) return;
   const dateVal  = dateOverride || $('verlauf-date')?.value || '';
   const typeVal  = $('verlauf-type')?.value || 'all';
@@ -932,7 +936,8 @@ async function filterVerlauf(dateOverride) {
     groups[dk].push(e);
   }
 
-  listEl.innerHTML = Object.entries(groups).map(([date, rows]) => `
+  // Build HTML strings per group (DocumentFragment batch render)
+  const htmlItems = Object.entries(groups).map(([date, rows]) => `
     <div class="verlauf-group">
       <h4 class="verlauf-date-header">${date}</h4>
       ${rows.map(e => {
@@ -961,8 +966,54 @@ async function filterVerlauf(dateOverride) {
           default: return '';
         }
       }).join('')}
-    </div>`).join('');
+    </div>`);
+
+  // When no date filter, show paginated "Load more" button
+  if (!dateVal && all.length >= PAGE_SIZE) {
+    htmlItems.push(`<button class="btn-secondary" style="width:100%;margin-top:.5rem"
+      onclick="_verlaufLoadMore()">Mehr laden (${all.length} Einträge)</button>`);
+  }
+
+  batchRender(listEl, htmlItems);
 }
+
+window._verlaufLoadMore = async function() {
+  _verlaufPage++;
+  const listEl = $('verlauf-list');
+  if (!listEl || !activeChild) return;
+  const { items, hasMore, total } = await getVerlaufPage(activeChild.id, _verlaufPage, 30);
+  const groups = {};
+  for (const e of items) {
+    const dk = fmtDate(e.ts);
+    if (!groups[dk]) groups[dk] = [];
+    groups[dk].push(e);
+  }
+  const htmlItems = Object.entries(groups).map(([date, rows]) => `
+    <div class="verlauf-group">
+      <h4 class="verlauf-date-header">${date}</h4>
+      ${rows.map(e => {
+        switch (e._type) {
+          case 'sleep':  return \`<div class="log-item"><span class="log-icon">\${isSleeping(e) ? '😴' : '💤'}</span><div class="log-details"><span>\${fmtTime(e.ts)} → \${e.end ? fmtTime(e.end) : '…'}</span><span class="log-dur">\${fmtDur(sleepDuration(e)) || '…'}</span></div><button class="icon-btn danger" onclick="deleteVerlaufEntry('sleep',\${JSON.stringify(e.id)})">🗑️</button></div>\`;
+          case 'feed':   return \`<div class="log-item"><span class="log-icon">🍼</span><span>\${fmtTime(e.ts)} · \${e.type}\${e.amount ? ' · ' + e.amount + ' ml' : ''}</span><button class="icon-btn danger" onclick="deleteVerlaufEntry('feed',\${JSON.stringify(e.id)})">🗑️</button></div>\`;
+          case 'diaper': return \`<div class="log-item"><span class="log-icon">🧷</span><span>\${fmtTime(e.ts)} · \${e.kind}</span><button class="icon-btn danger" onclick="deleteVerlaufEntry('diaper',\${JSON.stringify(e.id)})">🗑️</button></div>\`;
+          default: return '';
+        }
+      }).join('')}
+    </div>`);
+  if (hasMore) {
+    htmlItems.push(`<button class="btn-secondary" style="width:100%;margin-top:.5rem"
+      onclick="_verlaufLoadMore()">Mehr laden (${total} gesamt)</button>`);
+  }
+  // Append (don't replace) existing items
+  const frag = document.createDocumentFragment();
+  const tmp  = document.createElement('div');
+  tmp.innerHTML = htmlItems.join('');
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+  // Remove old load-more button then append
+  const oldBtn = listEl.querySelector('button.btn-secondary');
+  if (oldBtn) oldBtn.remove();
+  listEl.appendChild(frag);
+};
 
 window.deleteVerlaufEntry = async function(storeKey, id) {
   const store = { sleep: STORES.SLEEP, feed: STORES.FEED, diaper: STORES.DIAPER }[storeKey];

@@ -1,7 +1,7 @@
 // ─── sleep.js — Sleep entry logic with DST-safe hardening ────────────────────
 // Replaces the ad-hoc sleep functions scattered across index.html.
 
-import { pad, fmtDur, fmtTime, fmtDate, startOfDay, endOfDay } from './helpers.js';
+import { pad, fmtDur, fmtTime, fmtDate, startOfDay, endOfDay, toLocalDateStr } from './helpers.js';
 
 // ── Types (JSDoc) ─────────────────────────────────────────────────────────────
 /**
