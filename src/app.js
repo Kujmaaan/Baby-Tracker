@@ -373,13 +373,6 @@ function renderSleepBarChart(entries) {
   });
 }
 
-// ── Verlauf (History) ─────────────────────────────────────────────────────────
-
-async function renderVerlauf() {
-  // Rendered inline by index.html — called to refresh data
-  if (!activeChild) { renderNoChild('verlauf'); return; }
-}
-
 // ── Wachstum (Growth) ─────────────────────────────────────────────────────────
 
 async function renderWachstum() {
@@ -691,7 +684,7 @@ function showRestorePreviewModal(preview) {
       <div class="modal-card" style="max-width:480px">
         <h3>📦 Backup-Vorschau</h3>
         ${warnings}
-        <p>Backup-Datum: <strong>${data => data.exportedAt ? new Date(data.exportedAt).toLocaleString('de-DE') : 'Unbekannt'}</strong></p>
+        <p>Backup-Datum: <strong>${preview.exportedAt ? new Date(preview.exportedAt).toLocaleString('de-DE') : 'Unbekannt'}</strong></p>
         <table class="restore-table" style="width:100%;font-size:.8rem;margin:.75rem 0">
           <thead><tr><th>Store</th><th>Aktuell</th><th>Backup</th><th>Neu</th><th>Konflikte</th></tr></thead>
           <tbody>${stats}</tbody>
@@ -714,13 +707,8 @@ function showRestorePreviewModal(preview) {
       </div>
     </div>`;
 
-  // Substitute exportedAt
-  const filled = html.replace(
-    'data => data.exportedAt ? new Date(data.exportedAt).toLocaleString('de-DE') : 'Unbekannt'',
-    window._restoreData?.exportedAt ? new Date(window._restoreData.exportedAt).toLocaleString('de-DE') : 'Unbekannt'
-  );
   const div = document.createElement('div');
-  div.innerHTML = filled;
+  div.innerHTML = html;
   document.body.appendChild(div.firstElementChild);
 }
 
@@ -1103,9 +1091,9 @@ window._verlaufLoadMore = async function() {
       <h4 class="verlauf-date-header">${date}</h4>
       ${rows.map(e => {
         switch (e._type) {
-          case 'sleep':  return \`<div class="log-item"><span class="log-icon">\${isSleeping(e) ? '😴' : '💤'}</span><div class="log-details"><span>\${fmtTime(e.ts)} → \${e.end ? fmtTime(e.end) : '…'}</span><span class="log-dur">\${fmtDur(sleepDuration(e)) || '…'}</span></div><button class="icon-btn danger" onclick="deleteVerlaufEntry('sleep',\${JSON.stringify(e.id)})">🗑️</button></div>\`;
-          case 'feed':   return \`<div class="log-item"><span class="log-icon">🍼</span><span>\${fmtTime(e.ts)} · \${e.type}\${e.amount ? ' · ' + e.amount + ' ml' : ''}</span><button class="icon-btn danger" onclick="deleteVerlaufEntry('feed',\${JSON.stringify(e.id)})">🗑️</button></div>\`;
-          case 'diaper': return \`<div class="log-item"><span class="log-icon">🧷</span><span>\${fmtTime(e.ts)} · \${e.kind}</span><button class="icon-btn danger" onclick="deleteVerlaufEntry('diaper',\${JSON.stringify(e.id)})">🗑️</button></div>\`;
+          case 'sleep':  return `<div class="log-item"><span class="log-icon">\${isSleeping(e) ? '😴' : '💤'}</span><div class="log-details"><span>\${fmtTime(e.ts)} → \${e.end ? fmtTime(e.end) : '…'}</span><span class="log-dur">\${fmtDur(sleepDuration(e)) || '…'}</span></div><button class="icon-btn danger" onclick="deleteVerlaufEntry('sleep',\${JSON.stringify(e.id)})">🗑️</button></div>`;
+          case 'feed':   return `<div class="log-item"><span class="log-icon">🍼</span><span>\${fmtTime(e.ts)} · \${e.type}\${e.amount ? ' · ' + e.amount + ' ml' : ''}</span><button class="icon-btn danger" onclick="deleteVerlaufEntry('feed',\${JSON.stringify(e.id)})">🗑️</button></div>`;
+          case 'diaper': return `<div class="log-item"><span class="log-icon">🧷</span><span>\${fmtTime(e.ts)} · \${e.kind}</span><button class="icon-btn danger" onclick="deleteVerlaufEntry('diaper',\${JSON.stringify(e.id)})">🗑️</button></div>`;
           default: return '';
         }
       }).join('')}
