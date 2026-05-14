@@ -38,6 +38,7 @@ import { DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS } from './constants.js';
 import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LENGTHS } from './security.js';
 import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTrackedListener, cleanupAllListeners, PAGE_SIZE } from './perf.js';
 import { takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot, getSnapshot, clearSnapshot } from './restore.js';
+import { softDelete, filterDeleted, getActiveEntries, getRecentlyDeleted, purgeTombstones } from './tombstone.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -862,6 +863,27 @@ function showToast(msg, type = 'info') {
 }
 window.showToast = showToast;
 
+/** Show a toast with an Undo action (5 seconds). */
+function showUndoToast(msg, undoFn) {
+  let toast = $('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+  clearTimeout(toast._timer);
+  toast.className = 'toast toast-undo show';
+  toast.innerHTML = `<span>${msg}</span><button class="toast-undo-btn" style="background:none;border:none;color:#fff;font-weight:700;cursor:pointer;text-decoration:underline;margin-left:auto">Rückgängig</button>`;
+  let dismissed = false;
+  const dismiss = () => { if (!dismissed) { dismissed = true; toast.classList.remove('show'); } };
+  toast.querySelector('.toast-undo-btn').onclick = async () => {
+    dismiss();
+    try { await undoFn(); showToast('Wiederhergestellt ✓'); }
+    catch (e) { showToast('Fehler: ' + e.message, 'error'); }
+  };
+  toast._timer = setTimeout(dismiss, 5000);
+}
+
 function closeModal(id) {
   $(id)?.classList.add('hidden');
 }
@@ -1104,8 +1126,14 @@ window._verlaufLoadMore = async function() {
 window.deleteVerlaufEntry = async function(storeKey, id) {
   const store = { sleep: STORES.SLEEP, feed: STORES.FEED, diaper: STORES.DIAPER }[storeKey];
   if (!store) return;
-  await deleteEntry(store, id);
-  await fbDelete(fbPath(store, id));
+  // Soft delete — marks deletedAt, writes tombstone, syncs _deleted marker to Firebase
+  const basePath = fbPath(store, id).replace('/' + id, '');
+  await softDelete(store, id, basePath, DEVICE_ID);
+  showUndoToast('Eintrag gelöscht', async () => {
+    const { restoreDeleted } = await import('./tombstone.js');
+    await restoreDeleted(store, id, basePath);
+    await filterVerlauf();
+  });
   await filterVerlauf();
 };
 
@@ -1145,4 +1173,6 @@ const _origBoot = window._app;
 document.addEventListener('DOMContentLoaded', () => {
   // After boot, update header name
   setTimeout(updateHeaderChildName, 600);
+  // Garbage-collect tombstones older than 30 days
+  setTimeout(() => purgeTombstones().catch(console.warn), 5000);
 });
