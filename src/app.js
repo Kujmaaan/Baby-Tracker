@@ -40,7 +40,7 @@ import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTra
 import { takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot, getSnapshot, clearSnapshot } from './restore.js';
 import { initSyncRevision } from './conflict.js';
 import { softDelete, filterDeleted, getActiveEntries, getRecentlyDeleted, purgeTombstones } from './tombstone.js';
-import { openDebugPanel, attachDebugTrigger, isDebugMode } from './debug.js';
+import { openDebugPanel, attachDebugTrigger, isDebugMode, startQuarantineMonitor } from './debug.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -1176,6 +1176,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateHeaderChildName, 600);
   // Garbage-collect tombstones older than 30 days
   setTimeout(() => purgeTombstones().catch(console.warn), 5000);
+
+  // Quarantine monitor — alerts user when sync items are permanently stuck
+  startQuarantineMonitor();
+  window.openDebugPanel = openDebugPanel;
 
   // Debug panel — 5× tap on version text or ?debug=1
   const versionEl = document.querySelector('.settings-section .hint');

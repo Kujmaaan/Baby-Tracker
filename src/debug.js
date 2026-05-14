@@ -188,6 +188,64 @@ export async function openDebugPanel() {
   };
 }
 
+// ── Quarantine Monitor ────────────────────────────────────────────────────────
+
+const QUARANTINE_BANNER_ID = 'bt-quarantine-banner';
+const QUARANTINE_CHECK_MS  = 5 * 60_000; // check every 5 minutes
+
+let _quarantineTimer = null;
+
+/**
+ * Show a persistent warning banner when quarantined sync items are detected.
+ * @param {number} count
+ */
+function showQuarantineBanner(count) {
+  if (document.getElementById(QUARANTINE_BANNER_ID)) return; // already shown
+  const el = document.createElement('div');
+  el.id = QUARANTINE_BANNER_ID;
+  el.style.cssText = [
+    'position:fixed','top:0','left:0','right:0',
+    'background:#dc2626','color:#fff','padding:10px 16px',
+    'font-size:.82rem','font-weight:600','z-index:9995',
+    'display:flex','align-items:center','gap:.5rem',
+    'box-shadow:0 2px 8px rgba(0,0,0,.3)',
+  ].join(';');
+  el.innerHTML = `⛔ ${count} Sync-Eintrag${count !== 1 ? 'e' : ''} in Quarantäne — Daten wurden nicht hochgeladen!
+    <button onclick="window.openDebugPanel?.()" style="background:rgba(255,255,255,.2);border:none;border-radius:4px;color:#fff;cursor:pointer;padding:2px 8px;margin-left:auto;font-size:.8rem">Details</button>
+    <button onclick="document.getElementById('${QUARANTINE_BANNER_ID}')?.remove()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:#fff">✕</button>`;
+  document.body.prepend(el);
+}
+
+async function _checkQuarantine() {
+  try {
+    const { getPendingQueue } = await import('./storage.js');
+    const queue = await getPendingQueue();
+    const count = queue.filter(i => i.status === 'quarantined').length;
+    if (count > 0) showQuarantineBanner(count);
+  } catch {}
+}
+
+/**
+ * Start periodic quarantine monitoring.
+ * Runs an immediate check, then repeats every QUARANTINE_CHECK_MS.
+ * Safe to call multiple times — only one timer runs at a time.
+ */
+export function startQuarantineMonitor() {
+  if (_quarantineTimer !== null) return;
+  _checkQuarantine();
+  _quarantineTimer = setInterval(_checkQuarantine, QUARANTINE_CHECK_MS);
+}
+
+/**
+ * Stop the quarantine monitor.
+ */
+export function stopQuarantineMonitor() {
+  if (_quarantineTimer !== null) {
+    clearInterval(_quarantineTimer);
+    _quarantineTimer = null;
+  }
+}
+
 // ── Tap-to-open trigger (5× tap on version string) ───────────────────────────
 
 export function attachDebugTrigger(versionEl) {
