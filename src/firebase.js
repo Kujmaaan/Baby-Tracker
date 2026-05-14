@@ -7,7 +7,13 @@ import { uid } from './helpers.js';
 import { resolveConflict, logConflict, isSyncLoop, showConflictNotification,
          newOperationId, incrementSyncRevision } from './conflict.js';
 
-// ── Firebase Config (public — secured via RTDB Rules) ────────────────────────
+// ── Firebase Config ───────────────────────────────────────────────────────────
+// The API key below is intentionally public. Firebase web API keys are client
+// identifiers, not secrets — they cannot be hidden in a static PWA. Access
+// control is enforced exclusively by Firebase Security Rules (data/firebase-rules.json):
+// every read/write requires a valid Anonymous Auth UID that is registered in
+// /members/{uid}/familyId. Quota abuse can be mitigated via Firebase's
+// App Check or HTTP-Referrer restrictions in the Firebase console.
 const FB_CONFIG = {
   apiKey:            "AIzaSyA0JAnuaFY4RPOZu7kg4oeeDZ6oQ8J0pIk",
   authDomain:        "baby-tracker-dd17c.firebaseapp.com",
