@@ -4,6 +4,8 @@
 
 import { enqueueSync, getPendingQueue, dequeueSync, failQueueItem } from './storage.js';
 import { uid } from './helpers.js';
+import { resolveConflict, logConflict, isSyncLoop, showConflictNotification,
+         newOperationId, incrementSyncRevision } from './conflict.js';
 
 // ── Firebase Config (public — secured via RTDB Rules) ────────────────────────
 const FB_CONFIG = {
@@ -83,7 +85,9 @@ export async function initFB(overrideConfig = null) {
  */
 export async function fbWrite(path, data, merge = false) {
   if (!fbReady || !_db) {
-    await enqueueSync('put', path, data);
+    // Stamp operationId so sync engine can detect loops
+    const stamped = data ? { ...data, operationId: data.operationId || newOperationId() } : data;
+    await enqueueSync('put', path, stamped);
     return;
   }
   try {
@@ -163,46 +167,106 @@ export function fbUnlisten(path) {
  * @returns {Promise<{synced: number, failed: number}>}
  */
 export async function syncUp() {
-  if (!fbReady || _syncing) return { synced: 0, failed: 0, quarantined: 0 };
+  if (!fbReady || _syncing) return { synced: 0, failed: 0, quarantined: 0, conflicts: 0 };
   _syncing = true;
-  let synced = 0, failed = 0, quarantined = 0;
+  let synced = 0, failed = 0, quarantined = 0, conflicts = 0;
   const BACKOFF = [2000, 4000, 8000, 16000, 32000];
   const MAX_RETRY = 5;
+
   try {
     const queue = await getPendingQueue();
-    if (!queue.length) return { synced: 0, failed: 0, quarantined: 0 };
-    // Deduplicate: for same path keep only latest write
+    if (!queue.length) return { synced: 0, failed: 0, quarantined: 0, conflicts: 0 };
+
+    // Deduplicate: for same path keep only the latest write (by createdAt)
     const deduped = new Map();
     for (const item of queue) {
       const ex = deduped.get(item.path);
       if (!ex || item.createdAt > ex.createdAt) {
-        if (ex) await dequeueSync(ex.qid);
+        if (ex) await dequeueSync(ex.qid); // discard older duplicate
         deduped.set(item.path, item);
       }
     }
+
     for (const item of deduped.values()) {
+      // Sync loop guard
+      if (item.operationId && isSyncLoop(item.operationId)) {
+        console.warn('[FB] Sync loop detected, skipping:', item.path);
+        await dequeueSync(item.qid);
+        continue;
+      }
+
+      // Quarantine guard
       if ((item.attempts || 0) >= MAX_RETRY) { quarantined++; continue; }
+
+      // Backoff guard
       if (item.lastFailedAt) {
-        const delay = BACKOFF[Math.min((item.attempts||1)-1, BACKOFF.length-1)];
+        const delay = BACKOFF[Math.min((item.attempts || 1) - 1, BACKOFF.length - 1)];
         if (Date.now() - item.lastFailedAt < delay) { failed++; continue; }
       }
+
       try {
-        if (item.op === 'put')    await _db.ref(item.path).set(item.data);
-        else if (item.op === 'delete') await _db.ref(item.path).remove();
+        if (item.op === 'put' && item.data) {
+          // Conflict resolution: read remote before writing
+          let remote = null;
+          try {
+            const snap = await _db.ref(item.path).once('value');
+            remote = snap.val();
+          } catch { /* offline — skip conflict check */ }
+
+          if (remote !== null) {
+            const result = resolveConflict(item.data, remote, item);
+            if (result.resolution === 'remote-wins' || result.resolution === 'stale-discarded' || result.resolution === 'tombstone-wins') {
+              // Discard our write — remote is authoritative
+              logConflict({
+                path:       item.path,
+                resolution: result.resolution,
+                reason:     result.reason,
+                localTs:    item.data?.updatedAt,
+                remoteTs:   remote?.updatedAt,
+              });
+              conflicts++;
+              await dequeueSync(item.qid);
+              console.warn('[FB] Conflict discarded local write:', item.path, result.reason);
+              continue;
+            } else if (result.resolution !== 'local-wins') {
+              logConflict({ path: item.path, resolution: result.resolution, reason: result.reason });
+              conflicts++;
+            }
+          }
+
+          // Stamp syncRevision + operationId onto the data
+          const payload = {
+            ...item.data,
+            syncRevision: incrementSyncRevision(),
+            operationId:  item.operationId || newOperationId(),
+          };
+          await _db.ref(item.path).set(payload);
+
+        } else if (item.op === 'delete') {
+          await _db.ref(item.path).remove();
+        }
+
         await dequeueSync(item.qid);
         synced++;
+
       } catch (err) {
         console.warn('[FB] Sync failed:', item.path, err?.message);
         await failQueueItem(item.qid);
         failed++;
       }
     }
+
+    // Surface conflicts to user if significant
+    if (conflicts > 0) showConflictNotification(conflicts);
+
   } finally {
     _syncing = false;
   }
-  if (synced > 0 || quarantined > 0)
-    console.info(`[FB] Sync: ${synced} synced, ${failed} pending, ${quarantined} quarantined`);
-  return { synced, failed, quarantined };
+
+  if (synced > 0 || quarantined > 0 || conflicts > 0)
+    console.info(`[FB] Sync: ${synced} synced, ${failed} pending, ${quarantined} quarantined, ${conflicts} conflicts`);
+
+  return { synced, failed, quarantined, conflicts };
 }
 
 /**
