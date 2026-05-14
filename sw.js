@@ -1,11 +1,11 @@
-// ─── Service Worker v23 — baby-tracker ───────────────────────────────────────
+// ─── Service Worker v24 — baby-tracker ───────────────────────────────────────
 // Strategy:
 //   • App shell (HTML/JS/CSS/manifest) → Network-first, fallback to cache
 //   • Google Fonts                     → Cache-first (immutable)
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v23';
+const CACHE_VER   = 'baby-tracker-v24';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -28,6 +28,7 @@ const APP_SHELL = [
   './src/restore.js',
   './src/tombstone.js',
   './src/conflict.js',
+  './src/growth.js',
   './src/debug.js',
 ];
 

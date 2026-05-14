@@ -34,13 +34,14 @@ import {
   uid, deepClone, debounce, escHtml, fmtWeight, fmtHeight,
 } from './helpers.js';
 
-import { DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS } from './constants.js';
+import { DEVICE_ID, PRESET_MILESTONES, ICONS } from './constants.js';
 import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LENGTHS } from './security.js';
 import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTrackedListener, cleanupAllListeners, PAGE_SIZE } from './perf.js';
 import { takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot, getSnapshot, clearSnapshot } from './restore.js';
 import { initSyncRevision } from './conflict.js';
 import { softDelete, filterDeleted, getActiveEntries, getRecentlyDeleted, purgeTombstones } from './tombstone.js';
 import { openDebugPanel, attachDebugTrigger, isDebugMode, startQuarantineMonitor } from './debug.js';
+import { renderGrowthSVG, buildGrowthList } from './growth.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -385,51 +386,37 @@ function renderSleepBarChart(entries) {
 
 // ── Wachstum (Growth) ─────────────────────────────────────────────────────────
 
-async function renderWachstum() {
-  if (!activeChild) { renderNoChild('wachstum'); return; }
-  lazyRenderChart('growth-svg', () => renderGrowthChart('weight'));
+async function updateGrowthView(type = 'weight') {
+  if (!activeChild) return;
+  const entries = await getEntriesByChild(STORES.HEALTH, activeChild.id);
+
+  const percentile = renderGrowthSVG($('growth-svg'), type, entries, activeChild.birthday, activeChild.gender);
+
+  const badgeEl = $('growth-percentile');
+  if (badgeEl) {
+    if (percentile) {
+      badgeEl.textContent = `Aktuell: ${percentile}`;
+      badgeEl.classList.remove('hidden');
+    } else {
+      badgeEl.classList.add('hidden');
+    }
+  }
+
+  ['weight', 'height', 'head'].forEach(t => {
+    const panel = $(`growth-${t}-panel`);
+    if (panel) panel.style.display = t === type ? '' : 'none';
+  });
+  document.querySelectorAll('#growth-type-btns .seg-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === type));
+
+  const listEl = $(`growth-${type}-list`);
+  if (listEl) listEl.innerHTML = buildGrowthList(entries, type, activeChild.birthday);
 }
 
-function renderGrowthChart(type) {
-  const svg = $('growth-svg');
-  if (!svg || !activeChild) return;
-  const gender  = activeChild.gender?.startsWith('m') ? 'boys' : 'girls';
-  const dataset = WHO_DATA[type]?.[gender] || [];
-  if (!dataset.length) return;
-
-  const W = 300, H = 160, padL = 28, padB = 20, padT = 8, padR = 8;
-  const months = dataset.map(r => r[0]);
-  const maxX   = Math.max(...months);
-  const vals   = dataset.flatMap(r => r.slice(1));
-  const minY   = Math.min(...vals);
-  const maxY   = Math.max(...vals);
-
-  const tx = m => padL + ((m / maxX) * (W - padL - padR));
-  const ty = v => H - padB - ((v - minY) / (maxY - minY)) * (H - padT - padB);
-
-  const percentiles = [0, 1, 2, 3, 4]; // P3, P15, P50, P85, P97
-  const colors = ['#e9d5ff','#c4b5fd','#8b5cf6','#c4b5fd','#e9d5ff'];
-  const labels = ['P3','P15','P50','P85','P97'];
-
-  let paths = '';
-  percentiles.forEach((pi, idx) => {
-    const points = dataset.map(r => `${tx(r[0]).toFixed(1)},${ty(r[pi + 1]).toFixed(1)}`).join(' ');
-    const strokeW = pi === 2 ? 1.5 : 0.8;
-    paths += `<polyline points="${points}" fill="none" stroke="${colors[idx]}" stroke-width="${strokeW}" />`;
-    // Label at end
-    const last = dataset[dataset.length - 1];
-    paths += `<text x="${(tx(last[0]) + 2).toFixed(1)}" y="${ty(last[pi + 1]).toFixed(1)}"
-      font-size="6" fill="${colors[idx]}">${labels[idx]}</text>`;
-  });
-
-  // Child data points
-  // (health entries would be overlaid here — rendered by gesundheit module)
-
-  // Axes
-  const xAxis = `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--border)" stroke-width="0.5"/>`;
-  const yAxis = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--border)" stroke-width="0.5"/>`;
-
-  svg.innerHTML = paths + xAxis + yAxis;
+async function renderWachstum() {
+  if (!activeChild) { renderNoChild('wachstum'); return; }
+  const activeType = document.querySelector('#growth-type-btns .seg-btn.active')?.dataset.type || 'weight';
+  await updateGrowthView(activeType);
 }
 
 // ── Meilensteine ──────────────────────────────────────────────────────────────
@@ -498,15 +485,22 @@ async function renderGesundheit() {
   }
 }
 
-window.addHealthEntry = async function(type) {
-  if (!activeChild) return;
-  const valStr = prompt(type === 'weight' ? 'Gewicht (g):' : 'Größe (cm):');
-  if (!valStr) return;
-  const value = parseFloat(valStr.replace(',', '.'));
-  if (isNaN(value)) { showToast('Ungültiger Wert.', 'error'); return; }
-  const entry = await addEntry(STORES.HEALTH, { childId: activeChild.id, ts: Date.now(), type, value }, DEVICE_ID);
+window.addHealthEntry = async function(type, value, ts = Date.now()) {
+  if (!activeChild || isNaN(value) || value <= 0) return;
+  const entry = await addEntry(STORES.HEALTH, { childId: activeChild.id, ts, type, value }, DEVICE_ID);
   await fbWriteEntry(STORES.HEALTH, entry);
-  showToast('Eintrag gespeichert ✓');
+  showToast('Messung gespeichert ✓');
+  await updateGrowthView(type);
+  await renderGesundheit();
+};
+
+window.deleteHealthEntry = async function(id) {
+  if (!activeChild) return;
+  const path = fbPath(STORES.HEALTH, id).replace('/' + id, '');
+  await softDelete(STORES.HEALTH, id, path, DEVICE_ID);
+  showToast('Eintrag gelöscht');
+  const activeType = document.querySelector('#growth-type-btns .seg-btn.active')?.dataset.type || 'weight';
+  await updateGrowthView(activeType);
   await renderGesundheit();
 };
 
@@ -1166,8 +1160,7 @@ function updateHeaderChildName() {
   if (el && activeChild) el.textContent = activeChild.name;
 }
 
-// Expose renderGrowthChart for inline switchGrowthType
-window._app.renderGrowthChart = renderGrowthChart;
+window._app.renderGrowthChart = updateGrowthView;
 
 // Patch boot to update header after active child loads
 const _origBoot = window._app;

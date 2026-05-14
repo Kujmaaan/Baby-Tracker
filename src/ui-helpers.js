@@ -123,6 +123,65 @@ window.saveDiaperModal = async function() {
   window.closeModal?.('diaper-modal');
 };
 
+// ── Health entry modal ────────────────────────────────────────────────────────
+
+const _HEALTH_META = {
+  weight: { title: '⚖️ Gewicht eintragen',     unit: 'g',  min: 500,   max: 30000, step: 10,  placeholder: 'z.B. 4500' },
+  height: { title: '📏 Größe eintragen',        unit: 'cm', min: 30,    max: 150,   step: 0.5, placeholder: 'z.B. 52.5' },
+  head:   { title: '📐 Kopfumfang eintragen',   unit: 'cm', min: 20,    max: 70,    step: 0.1, placeholder: 'z.B. 35.0' },
+};
+
+window.openHealthModal = function(type) {
+  const meta    = _HEALTH_META[type] || _HEALTH_META.weight;
+  const titleEl = document.getElementById('health-modal-title');
+  const unitEl  = document.getElementById('health-modal-unit');
+  const valEl   = document.getElementById('health-modal-value');
+  const dateEl  = document.getElementById('health-modal-date');
+  const modal   = document.getElementById('health-modal');
+  if (!modal) return;
+
+  if (titleEl) titleEl.textContent = meta.title;
+  if (unitEl)  unitEl.textContent  = meta.unit;
+  if (valEl) {
+    valEl.value       = '';
+    valEl.min         = meta.min;
+    valEl.max         = meta.max;
+    valEl.step        = meta.step;
+    valEl.placeholder = meta.placeholder;
+  }
+  if (dateEl) {
+    const today = new Date();
+    const iso   = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    dateEl.value = iso;
+    dateEl.max   = iso;
+  }
+  modal.dataset.healthType = type;
+  window.openModal('health-modal');
+};
+
+window.saveHealthModal = async function() {
+  const modal   = document.getElementById('health-modal');
+  const type    = modal?.dataset.healthType;
+  const valStr  = document.getElementById('health-modal-value')?.value?.trim();
+  const dateStr = document.getElementById('health-modal-date')?.value;
+  if (!valStr || !type) return;
+
+  const value = parseFloat(valStr.replace(',', '.'));
+  if (isNaN(value) || value <= 0) {
+    window.showToast?.('Ungültiger Wert.', 'error');
+    return;
+  }
+
+  let ts = Date.now();
+  if (dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    ts = new Date(y, m - 1, d, 12, 0, 0).getTime();
+  }
+
+  window.closeModal?.('health-modal');
+  await window.addHealthEntry?.(type, value, ts);
+};
+
 // ── Tagesplan add ─────────────────────────────────────────────────────────────
 
 window.addTagesplan = async function() {

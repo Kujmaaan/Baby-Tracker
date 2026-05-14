@@ -74,6 +74,7 @@ body{opacity:0;transition:opacity .15s}</style>
   <link rel="modulepreload" href="src/perf.js">
   <link rel="modulepreload" href="src/conflict.js">
   <link rel="modulepreload" href="src/tombstone.js">
+  <link rel="modulepreload" href="src/growth.js">
   <link rel="modulepreload" href="src/restore.js">
   <link rel="modulepreload" href="src/debug.js">
   <link rel="modulepreload" href="src/app.js">
@@ -299,13 +300,25 @@ body{opacity:0;transition:opacity .15s}</style>
           <span style="color:#8b5cf6">■ P50</span>
           <span style="color:#c4b5fd">■ P85</span>
           <span style="color:#e9d5ff">■ P97</span>
+          <span style="color:#f97316">● Kind</span>
         </div>
       </div>
-      <!-- Data entries -->
+      <!-- Percentile badge -->
+      <div id="growth-percentile" class="hidden" style="text-align:center;margin:.25rem 0 .5rem;font-size:13px;font-weight:600;color:#f97316"></div>
+      <!-- Type-specific measurement lists + entry buttons -->
       <div class="growth-entries">
-        <div id="growth-weight-list" class="log-list"></div>
-        <button class="btn btn-primary btn-full" onclick="addHealthEntry('weight')">+ Gewicht eintragen</button>
-        <button class="btn btn-secondary btn-full" style="margin-top:8px" onclick="addHealthEntry('height')">+ Größe eintragen</button>
+        <div id="growth-weight-panel" class="growth-panel">
+          <div id="growth-weight-list" class="log-list"></div>
+          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('weight')">+ Gewicht eintragen</button>
+        </div>
+        <div id="growth-height-panel" class="growth-panel" style="display:none">
+          <div id="growth-height-list" class="log-list"></div>
+          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('height')">+ Größe eintragen</button>
+        </div>
+        <div id="growth-head-panel" class="growth-panel" style="display:none">
+          <div id="growth-head-list" class="log-list"></div>
+          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('head')">+ Kopfumfang eintragen</button>
+        </div>
       </div>
     </section>
 
@@ -503,6 +516,28 @@ body{opacity:0;transition:opacity .15s}</style>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('diaper-modal')">Abbrechen</button>
       <button class="btn btn-primary" onclick="saveDiaperModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Health Entry Modal -->
+<div id="health-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="health-modal-title">
+  <div class="modal-card">
+    <h3 class="modal-title" id="health-modal-title">Messung eintragen</h3>
+    <div class="form-row">
+      <label id="health-modal-label">Wert</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="health-modal-value" class="input-field" style="flex:1" step="1" min="0" inputmode="decimal">
+        <span id="health-modal-unit" style="font-size:13px;color:var(--muted);min-width:20px">g</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Datum</label>
+      <input type="date" id="health-modal-date" class="input-field">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('health-modal')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveHealthModal()">Speichern</button>
     </div>
   </div>
 </div>
