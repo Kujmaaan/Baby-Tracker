@@ -934,3 +934,134 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   transition: background .2s;
 }
 .btn-danger:hover { background: #b91c1c; }
+
+/* ── PHASE 5: Lighthouse + iOS + A11y Polish ───────────────────────────────── */
+
+/* Skeleton loading animation */
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--surface-2) 25%,
+    var(--surface-3, #e5e7eb) 50%,
+    var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius);
+  min-height: 1em;
+}
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--surface-2); }
+}
+
+/* iOS Safari: prevent input zoom (font-size ≥ 16px) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: max(16px, 1rem) !important;
+  }
+}
+
+/* iOS safe areas (notch / home indicator) */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left:   env(safe-area-inset-left, 0px);
+  padding-right:  env(safe-area-inset-right, 0px);
+}
+.tab-bar, nav.bottom-nav {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), .5rem);
+}
+
+/* CLS prevention: reserve space for dynamic content */
+#verlauf-list,
+#milestone-list,
+#health-weight-list,
+#health-height-list {
+  min-height: 4rem;
+  contain: layout;
+}
+
+/* Better offline UX */
+.offline-indicator {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #f59e0b;
+  color: #1c1917;
+  text-align: center;
+  font-size: .8rem;
+  font-weight: 600;
+  padding: .35rem;
+  z-index: 9998;
+}
+body.is-offline .offline-indicator { display: block; }
+body.is-offline .tab-bar,
+body.is-offline nav.bottom-nav { top: 1.6rem; }
+
+/* SW update banner */
+#sw-update-banner {
+  display: none;
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+  left: 50%; transform: translateX(-50%);
+  background: var(--primary, #8b5cf6);
+  color: #fff;
+  border-radius: 24px;
+  padding: .65rem 1.25rem;
+  font-size: .85rem;
+  font-weight: 600;
+  z-index: 9995;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  animation: slide-up .3s ease;
+}
+@keyframes slide-up {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+
+/* Smoother page transitions */
+.page {
+  animation: page-in .18s ease;
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page { animation: none; }
+}
+
+/* Touch feedback for interactive elements */
+button:active, .log-item button:active {
+  transform: scale(.96);
+  transition: transform .08s;
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active { transform: none; }
+}
+
+/* Undo toast */
+.toast-undo {
+  display: flex !important;
+  align-items: center;
+  gap: .5rem;
+}
+
+/* Forced colors (Windows High Contrast) */
+@media (forced-colors: active) {
+  .btn-primary, .btn-secondary, .btn-danger { border: 2px solid ButtonText; }
+  .skeleton { background: ButtonFace; }
+  .offline-indicator { background: Highlight; color: HighlightText; }
+}
+
+/* Font display: swap fallback for any system fonts loaded via @font-face */
+/* (App uses system-ui — no custom fonts, so no FOUT issue) */
+
+/* Print: hide nav for any print scenarios */
+@media print {
+  nav, .tab-bar, #toast, #sw-update-banner, .offline-indicator { display: none !important; }
+}

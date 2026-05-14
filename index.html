@@ -72,6 +72,8 @@ body{opacity:0;transition:opacity .15s}</style>
   <link rel="modulepreload" href="src/app.js">
 </head>
 <body>
+  <div class="offline-indicator" aria-live="polite">⚡ Offline — Änderungen werden gespeichert und später synchronisiert</div>
+  <div id="sw-update-banner" role="alert" aria-live="assertive" hidden>🔄 Update verfügbar <button onclick="updateSW()" style="background:#fff;color:#7c3aed;border:none;border-radius:12px;padding:4px 12px;font-weight:700;cursor:pointer">Jetzt laden</button> <button onclick="document.getElementById('sw-update-banner').hidden=true" style="background:none;border:none;color:#fff;cursor:pointer">✕</button></div>
 <a href="#main-content" class="skip-link">Zum Inhalt springen</a>
 
 <!-- ── Firebase Loading Overlay ──────────────────────────────────── -->

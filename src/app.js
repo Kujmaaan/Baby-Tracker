@@ -1175,4 +1175,35 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateHeaderChildName, 600);
   // Garbage-collect tombstones older than 30 days
   setTimeout(() => purgeTombstones().catch(console.warn), 5000);
+
+  // Online/Offline body class for offline-indicator CSS
+  const setOnlineState = () => {
+    document.body.classList.toggle('is-offline', !navigator.onLine);
+  };
+  setOnlineState();
+  window.addEventListener('online',  setOnlineState);
+  window.addEventListener('offline', setOnlineState);
+
+  // SW update detection — show update banner when new SW is waiting
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW?.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            const banner = document.getElementById('sw-update-banner');
+            if (banner) banner.hidden = false;
+          }
+        });
+      });
+    });
+  }
 });
+
+// Activate new SW on user request
+window.updateSW = function() {
+  navigator.serviceWorker.ready.then(reg => {
+    reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
+    window.location.reload();
+  });
+};

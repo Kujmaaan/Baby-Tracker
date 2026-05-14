@@ -5,7 +5,7 @@
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v19';
+const CACHE_VER   = 'baby-tracker-v20';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -112,4 +112,9 @@ self.addEventListener('sync', e => {
       clients.forEach(c => c.postMessage({ type: 'SYNC_REQUESTED' }))
     ));
   }
+});
+
+// ── SW Update: activate on demand ────────────────────────────────────────────
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
