@@ -4,7 +4,7 @@
   <!-- Content Security Policy -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net;
+    script-src 'self' 'sha256-hah4Q9CN1CA6gn0qZlY2KHw1JdlM+x4o+miO7GCpz1Q=' 'sha256-CiNLAwgKhL7Fj6WStDXmc8cLMBz6pdEMJenmqIbyym4=' https://www.gstatic.com https://cdn.jsdelivr.net;
     connect-src 'self'
       https://*.firebaseio.com
       https://*.googleapis.com
@@ -71,6 +71,7 @@ body{opacity:0;transition:opacity .15s}</style>
   <link rel="modulepreload" href="src/restore.js">
   <link rel="modulepreload" href="src/debug.js">
   <link rel="modulepreload" href="src/app.js">
+  <link rel="modulepreload" href="src/ui-helpers.js">
 </head>
 <body>
   <div class="offline-indicator" aria-live="polite">⚡ Offline — Änderungen werden gespeichert und später synchronisiert</div>
@@ -514,111 +515,7 @@ body{opacity:0;transition:opacity .15s}</style>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- ── Inline UI helpers ────────────────────────────────────────── -->
-<script>
-  // Onboarding navigation
-  let _obSlide = 0;
-  const _obSlides = document.querySelectorAll('.ob-slide');
-  const _obDots   = document.querySelectorAll('.ob-dot');
-  function obShowSlide(n) {
-    _obSlides.forEach((s, i) => s.classList.toggle('active', i === n));
-    _obDots.forEach((d, i)   => d.classList.toggle('active', i === n));
-    document.getElementById('ob-prev').style.display = n === 0 ? 'none' : '';
-    document.getElementById('ob-next').textContent = n === _obSlides.length - 1 ? 'Los geht\'s!' : 'Weiter';
-  }
-  function obNext() {
-    if (_obSlide < _obSlides.length - 1) { _obSlide++; obShowSlide(_obSlide); }
-    else window.finishOnboard?.();
-  }
-  function obPrev() {
-    if (_obSlide > 0) { _obSlide--; obShowSlide(_obSlide); }
-  }
-
-  // Fix-start day selection
-  function fsDaySelect(btn) {
-    document.querySelectorAll('#fs-day-btns .seg-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  // Diaper kind selection
-  function diaperSelect(btn) {
-    document.querySelectorAll('#diaper-modal .seg-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  // Modal open
-  function openModal(id) {
-    document.getElementById(id)?.classList.remove('hidden');
-  }
-
-  // Mehr sheet
-  function toggleMehrSheet() {
-    document.getElementById('mehr-overlay').classList.toggle('hidden');
-  }
-  function closeMehrSheet(e) {
-    if (e.target === document.getElementById('mehr-overlay'))
-      document.getElementById('mehr-overlay').classList.add('hidden');
-  }
-  function gotoPage(id) {
-    document.getElementById('mehr-overlay').classList.add('hidden');
-    window._app?.showPage(id) || document.querySelector(`.nav-btn[data-page="${id}"]`)?.click();
-  }
-
-  // Child switcher
-  function openChildSwitcher() {
-    document.getElementById('child-switcher-overlay').classList.remove('hidden');
-    window._refreshChildSwitcher?.();
-  }
-  function closeChildSwitcher(e) {
-    if (!e || e.target === document.getElementById('child-switcher-overlay'))
-      document.getElementById('child-switcher-overlay').classList.add('hidden');
-  }
-
-  // Verlauf filter
-  async function filterVerlauf() {
-    window._app?.filterVerlauf?.();
-  }
-
-  // Growth type switch
-  function switchGrowthType(type) {
-    document.querySelectorAll('#growth-type-btns .seg-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.type === type));
-    window._app?.renderGrowthChart?.(type);
-  }
-
-  // Tracker quick entries
-  async function addFeedEntry() {
-    const type   = document.getElementById('feed-type').value;
-    const amount = parseFloat(document.getElementById('feed-amount').value) || null;
-    window._addFeedEntry?.({ type, amount });
-  }
-  async function addDiaperEntry() {
-    const kind = document.getElementById('diaper-type').value;
-    window._addDiaperEntry?.({ kind });
-  }
-
-  // Modal save wrappers
-  async function saveFeedModal() {
-    const type   = document.getElementById('modal-feed-type').value;
-    const amount = parseFloat(document.getElementById('modal-feed-amount').value) || null;
-    await window._addFeedEntry?.({ type, amount });
-    window.closeModal?.('feed-modal');
-  }
-  async function saveDiaperModal() {
-    const btn  = document.querySelector('#diaper-modal .seg-btn.active');
-    const kind = btn?.dataset.kind || 'Nass';
-    await window._addDiaperEntry?.({ kind });
-    window.closeModal?.('diaper-modal');
-  }
-
-  // Tagesplan add
-  async function addTagesplan() {
-    const timeStr = document.getElementById('tp-time').value || '08:00';
-    const label   = document.getElementById('tp-label').value.trim();
-    if (!label) return;
-    await window._addTagesplan?.({ timeStr, label });
-    document.getElementById('tp-label').value = '';
-  }
-</script>
+<script type="module" src="src/ui-helpers.js"></script>
 
 <!-- ── ES Module entry point ────────────────────────────────────── -->
 <script>

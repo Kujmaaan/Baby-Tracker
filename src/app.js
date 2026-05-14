@@ -18,7 +18,7 @@ import {
   exportDB, importDB, bulkPut,
 } from './storage.js';
 
-import { initFB, fbWrite, fbDelete, syncUp, fbReady } from './firebase.js';
+import { initFB, fbWrite, fbDelete, syncUp, fbReady, fbRegisterMember } from './firebase.js';
 
 import {
   validateSleepEntry, normalizeSleepEntry,
@@ -38,6 +38,7 @@ import { DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS } from './constants.js';
 import { sanitize, esc, csvCell, validateImport, clampStr, safeFilename, MAX_LENGTHS } from './security.js';
 import { getDailySummaries, getVerlaufPage, batchRender, lazyRenderChart, addTrackedListener, cleanupAllListeners, PAGE_SIZE } from './perf.js';
 import { takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot, getSnapshot, clearSnapshot } from './restore.js';
+import { initSyncRevision } from './conflict.js';
 import { softDelete, filterDeleted, getActiveEntries, getRecentlyDeleted, purgeTombstones } from './tombstone.js';
 import { openDebugPanel, attachDebugTrigger, isDebugMode } from './debug.js';
 
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function boot() {
   // 1. DB
   await openDB();
+  await initSyncRevision(); // restore syncRevision from IDB if localStorage was cleared
 
   // 2. Config
   cfg = await loadCfg();
@@ -79,6 +81,7 @@ async function boot() {
     hideFbLoading();
     if (ok) {
       getFamilyId().then(fid => {
+        fbRegisterMember(fid);
         syncUp();
       });
     }
@@ -239,12 +242,12 @@ async function renderTodayLog() {
       case 'feed':
         return `<div class="log-item">
           <span class="log-icon">🍼</span>
-          <span>${fmtTime(e.ts)} · ${e.amount ? e.amount + ' ml' : e.type || 'Fütterung'}</span>
+          <span>${fmtTime(e.ts)} · ${e.amount ? e.amount + ' ml' : esc(e.type) || 'Fütterung'}</span>
         </div>`;
       case 'diaper':
         return `<div class="log-item">
           <span class="log-icon">🧷</span>
-          <span>${fmtTime(e.ts)} · ${e.kind || 'Windel'}</span>
+          <span>${fmtTime(e.ts)} · ${esc(e.kind) || 'Windel'}</span>
         </div>`;
       default: return '';
     }
@@ -447,8 +450,8 @@ window.toggleMilestone = async function(label, checked) {
     const entry = await addEntry(STORES.MILESTONE, { childId: activeChild.id, ts: Date.now(), label }, DEVICE_ID);
     await fbWriteEntry(STORES.MILESTONE, entry);
   } else if (!checked && existing) {
-    await deleteEntry(STORES.MILESTONE, existing.id);
-    await fbDelete(fbPath(STORES.MILESTONE, existing.id));
+    const _mPath = fbPath(STORES.MILESTONE, existing.id).replace('/' + existing.id, '');
+    await softDelete(STORES.MILESTONE, existing.id, _mPath, DEVICE_ID);
   }
   await renderMilestones();
 };
@@ -519,8 +522,8 @@ window.addAppt = async function() {
 };
 
 window.deleteAppt = async function(id) {
-  await deleteEntry(STORES.APPT, id);
-  await fbDelete(fbPath(STORES.APPT, id));
+  const _aPath = fbPath(STORES.APPT, id).replace('/' + id, '');
+  await softDelete(STORES.APPT, id, _aPath, DEVICE_ID);
   await renderGesundheit();
 };
 
@@ -565,7 +568,8 @@ window.toggleTagesplan = async function(id, done) {
 };
 
 window.deleteTagesplan = async function(id) {
-  await deleteEntry(STORES.TAGESPLAN, id);
+  const _tPath = fbPath(STORES.TAGESPLAN, id).replace('/' + id, '');
+  await softDelete(STORES.TAGESPLAN, id, _tPath, DEVICE_ID);
   await renderTagesplan();
 };
 
@@ -962,8 +966,8 @@ async function renderTrackerRecent() {
   ].sort((a, b) => b.ts - a.ts).slice(0, 10);
   el.innerHTML = all.length
     ? all.map(e => e._type === 'feed'
-        ? `<div class="log-item"><span class="log-icon">🍼</span><span>${fmtTime(e.ts)} · ${e.type}${e.amount ? ' · ' + e.amount + ' ml' : ''}</span></div>`
-        : `<div class="log-item"><span class="log-icon">🧷</span><span>${fmtTime(e.ts)} · ${e.kind}</span></div>`
+        ? `<div class="log-item"><span class="log-icon">🍼</span><span>${fmtTime(e.ts)} · ${esc(e.type)}${e.amount ? ' · ' + e.amount + ' ml' : ''}</span></div>`
+        : `<div class="log-item"><span class="log-icon">🧷</span><span>${fmtTime(e.ts)} · ${esc(e.kind)}</span></div>`
       ).join('')
     : '<p class="empty-state">Noch keine Einträge heute.</p>';
 }

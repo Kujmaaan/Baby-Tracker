@@ -8,7 +8,7 @@
 //  C) Stale write (device offline too long): detected by revision gap > MAX_REVISION_GAP
 //  D) Sync loop: detected by same operationId appearing twice in queue
 
-import { openDB, STORES, getEntry, updateEntry, getPendingQueue, dequeueSync } from './storage.js';
+import { openDB, STORES, getEntry, updateEntry, getPendingQueue, dequeueSync, cfgGet, cfgSet } from './storage.js';
 import { uid } from './helpers.js';
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -61,7 +61,24 @@ export function getSyncRevision() {
 export function incrementSyncRevision() {
   const next = getSyncRevision() + 1;
   localStorage.setItem(SYNC_REVISION_KEY, String(next));
+  // Async IDB backup — fire-and-forget so callers stay synchronous
+  cfgSet(SYNC_REVISION_KEY, next).catch(() => {});
   return next;
+}
+
+/**
+ * Initialise syncRevision from IDB on boot.
+ * Recovers the correct value if localStorage was cleared.
+ * Call once during app startup (before first syncUp).
+ */
+export async function initSyncRevision() {
+  try {
+    const idbRev = await cfgGet(SYNC_REVISION_KEY, 0);
+    const lsRev  = parseInt(localStorage.getItem(SYNC_REVISION_KEY) || '0', 10);
+    const max    = Math.max(idbRev || 0, lsRev);
+    if (max !== lsRev) localStorage.setItem(SYNC_REVISION_KEY, String(max));
+    if (max !== (idbRev || 0)) await cfgSet(SYNC_REVISION_KEY, max);
+  } catch {}
 }
 
 /**

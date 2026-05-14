@@ -53,7 +53,7 @@ export const MIGRATIONS = {
   },
 };
 
-export const CURRENT_DB_VERSION = Object.keys(MIGRATIONS).length; // = 3
+export const CURRENT_DB_VERSION = 3; // increment manually when adding a new migration
 
 // ── Conflict / Tab detection ──────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ export function runMigrations(db, tx, oldVersion, newVersion) {
 export function checkIntegrity(db) {
   const issues = [];
   const expectedStores = ['config','sleep','feed','diaper','health',
-                          'milestone','appointment','meal','tagesplan','sync_queue'];
+                          'milestone','appointment','meal','tagesplan','sync_queue','tombstones'];
   for (const name of expectedStores) {
     if (!db.objectStoreNames.contains(name)) {
       issues.push(`Missing store: ${name}`);

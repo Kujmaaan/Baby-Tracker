@@ -5,7 +5,7 @@
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v21';
+const CACHE_VER   = 'baby-tracker-v22';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -24,6 +24,7 @@ const APP_SHELL = [
   './src/migrations.js',
   './src/perf.js',
   './src/app.js',
+  './src/ui-helpers.js',
   './src/restore.js',
   './src/tombstone.js',
   './src/conflict.js',

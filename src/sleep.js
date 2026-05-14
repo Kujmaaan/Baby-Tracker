@@ -1,7 +1,7 @@
 // ─── sleep.js — Sleep entry logic with DST-safe hardening ────────────────────
 // Replaces the ad-hoc sleep functions scattered across index.html.
 
-import { pad, fmtDur, fmtTime, fmtDate, startOfDay, endOfDay, toLocalDateStr } from './helpers.js';
+import { pad, fmtDur, fmtTime, fmtDate, startOfDay, endOfDay, toLocalDateStr, escHtml } from './helpers.js';
 
 // ── Types (JSDoc) ─────────────────────────────────────────────────────────────
 /**
@@ -260,7 +260,7 @@ export function renderSleepItem(entry, onDelete, onEdit) {
         <span class="log-time">${fmtTime(entry.ts)} → ${endStr}</span>
         <span class="log-dur">${durStr}</span>
         ${night ? '<span class="log-badge night">über Mitternacht</span>' : ''}
-        ${entry.note ? `<span class="log-note">${entry.note}</span>` : ''}
+        ${entry.note ? `<span class="log-note">${escHtml(entry.note)}</span>` : ''}
       </div>
       <div class="log-actions">
         <button class="icon-btn" onclick="(${onEdit})(${JSON.stringify(entry.id)})" aria-label="Bearbeiten">✏️</button>

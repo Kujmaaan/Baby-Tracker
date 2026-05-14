@@ -285,27 +285,26 @@ export async function syncDown(familyId) {
   }
 }
 
+/**
+ * Register this device's family membership in /members/{uid}/familyId.
+ * Required by RTDB security rules: families/{familyId} is only accessible
+ * when root.child('members').child(auth.uid).child('familyId') == familyId.
+ * Called once after anonymous sign-in and familyId is resolved.
+ * @param {string} familyId
+ */
+export async function fbRegisterMember(familyId) {
+  if (!fbReady || !_db || !_auth?.currentUser) return;
+  try {
+    await _db.ref(`members/${_auth.currentUser.uid}`).set({ familyId });
+  } catch (err) {
+    console.warn('[FB] Member registration failed:', err);
+  }
+}
+
 // ── Firebase RTDB Security Rules (apply in Firebase Console) ─────────────────
 // See: /data/firebase-rules.json
 //
-// {
-//   "rules": {
-//     "families": {
-//       "$familyId": {
-//         ".read":  "auth != null && root.child('members').child(auth.uid).val() == $familyId",
-//         ".write": "auth != null && root.child('members').child(auth.uid).val() == $familyId",
-//         "$store": {
-//           "$entryId": {
-//             ".validate": "newData.hasChildren(['id','childId','ts'])"
-//           }
-//         }
-//       }
-//     },
-//     "members": {
-//       "$uid": {
-//         ".read":  "auth != null && auth.uid == $uid",
-//         ".write": "auth != null && auth.uid == $uid"
-//       }
-//     }
-//   }
-// }
+// Access model: each anonymous user writes their familyId into /members/{uid}.
+// RTDB rules verify root.child('members').child(auth.uid).child('familyId') == $familyId
+// before allowing access to families/{familyId}/...
+// fbRegisterMember() above performs this registration on every boot.

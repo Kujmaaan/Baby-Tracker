@@ -26,13 +26,17 @@ export async function takeSnapshot() {
   const data   = await exportDB();
   const snapId = uid();
   const snap   = { id: snapId, takenAt: Date.now(), data };
+  let stored = false;
   try {
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+    stored = true;
   } catch {
-    // If localStorage full, try sessionStorage
-    try { sessionStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap)); } catch {}
+    try {
+      sessionStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+      stored = true;
+    } catch {}
   }
-  return snapId;
+  return { snapId, stored };
 }
 
 /**
@@ -154,7 +158,10 @@ export async function safeRestore(backup, mode = 'overwrite', onProgress = null)
   let restored  = 0, skipped = 0, conflicts = 0;
 
   // 1. Auto-snapshot before ANY changes
-  const snapId = await takeSnapshot();
+  const { snapId, stored: _snapStored } = await takeSnapshot();
+  if (!_snapStored) {
+    errors.push('Snapshot konnte nicht gespeichert werden (Speicher voll) — Rollback nach diesem Restore nicht möglich.');
+  }
 
   const total = ENTRY_STORES.length + 2; // stores + queue + config
   let step    = 0;
