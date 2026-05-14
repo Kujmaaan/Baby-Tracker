@@ -61,7 +61,7 @@ test.describe('PWA & Service Worker', () => {
       '/', '/index.html', '/sw.js', '/manifest.json',
       '/src/app.js', '/src/storage.js', '/src/firebase.js',
       '/src/sleep.js', '/src/perf.js', '/src/security.js',
-      '/src/migrations.js', '/styles/main.css',
+      '/src/migrations.js', '/src/ui-helpers.js', '/styles/main.css',
     ];
     for (const file of files) {
       const res = await page.request.get(file);
