@@ -79,17 +79,18 @@ body{opacity:0;transition:opacity .15s}</style>
   <link rel="modulepreload" href="src/restore.js">
   <link rel="modulepreload" href="src/debug.js">
   <link rel="modulepreload" href="src/app.js">
+  <link rel="modulepreload" href="src/i18n.js">
   <link rel="modulepreload" href="src/ui-helpers.js">
 </head>
 <body>
-  <div class="offline-indicator" aria-live="polite">⚡ Offline — Änderungen werden gespeichert und später synchronisiert</div>
+  <div class="offline-indicator" aria-live="polite" data-i18n="banner.offline">⚡ Offline — Änderungen werden gespeichert und später synchronisiert</div>
   <div id="sw-update-banner" role="alert" aria-live="assertive" hidden>🔄 Update verfügbar <button onclick="updateSW()" style="background:#fff;color:#7c3aed;border:none;border-radius:12px;padding:4px 12px;font-weight:700;cursor:pointer">Jetzt laden</button> <button onclick="document.getElementById('sw-update-banner').hidden=true" style="background:none;border:none;color:#fff;cursor:pointer">✕</button></div>
-<a href="#main-content" class="skip-link">Zum Inhalt springen</a>
+<a href="#main-content" class="skip-link" data-i18n="skip.link">Zum Inhalt springen</a>
 
 <!-- ── Firebase Loading Overlay ──────────────────────────────────── -->
 <div id="fb-loading" class="hidden">
   <div class="fb-spinner"></div>
-  <p>Verbinde…</p>
+  <p data-i18n="fb.loading">Verbinde…</p>
 </div>
 
 <!-- ── Offline Badge ─────────────────────────────────────────────── -->
@@ -97,8 +98,8 @@ body{opacity:0;transition:opacity .15s}</style>
 
 <!-- ── SW Update Banner ──────────────────────────────────────────── -->
 <div id="update-banner" class="hidden update-banner">
-  Neue Version verfügbar!
-  <button onclick="reloadSW()">Aktualisieren</button>
+  <span data-i18n="banner.update.new">Neue Version verfügbar!</span>
+  <button onclick="reloadSW()" data-i18n="banner.update.refresh">Aktualisieren</button>
 </div>
 
 <!-- ── Onboarding Guide Overlay ──────────────────────────────────── -->
@@ -107,23 +108,23 @@ body{opacity:0;transition:opacity .15s}</style>
     <div class="onboard-slides">
       <div class="ob-slide active">
         <div class="ob-emoji">👶</div>
-        <h2>Willkommen beim Baby Tracker!</h2>
-        <p>Behalte Schlaf, Fütterung und mehr deines Babys im Blick – auch offline.</p>
+        <h2 data-i18n="ob.slide1.title">Willkommen beim Baby Tracker!</h2>
+        <p data-i18n="ob.slide1.text">Behalte Schlaf, Fütterung und mehr deines Babys im Blick – auch offline.</p>
       </div>
       <div class="ob-slide">
         <div class="ob-emoji">🌙</div>
-        <h2>Schlaf tracken</h2>
-        <p>Tippe auf "Schlafen" wenn das Baby einschläft — und wieder wenn es aufwacht. Korrekturen sind jederzeit möglich.</p>
+        <h2 data-i18n="ob.slide2.title">Schlaf tracken</h2>
+        <p data-i18n="ob.slide2.text">Tippe auf "Schlafen" wenn das Baby einschläft — und wieder wenn es aufwacht. Korrekturen sind jederzeit möglich.</p>
       </div>
       <div class="ob-slide">
         <div class="ob-emoji">📊</div>
-        <h2>Statistiken & Verlauf</h2>
-        <p>Sieh Wochenzusammenfassungen, Balkendiagramme und WHO-Wachstumskurven.</p>
+        <h2 data-i18n="ob.slide3.title">Statistiken & Verlauf</h2>
+        <p data-i18n="ob.slide3.text">Sieh Wochenzusammenfassungen, Balkendiagramme und WHO-Wachstumskurven.</p>
       </div>
       <div class="ob-slide">
         <div class="ob-emoji">🔔</div>
-        <h2>Erinnerungen & Backup</h2>
-        <p>Lass dich an Arzttermine erinnern und sichere deine Daten mit einem Klick.</p>
+        <h2 data-i18n="ob.slide4.title">Erinnerungen & Backup</h2>
+        <p data-i18n="ob.slide4.text">Lass dich an Arzttermine erinnern und sichere deine Daten mit einem Klick.</p>
       </div>
     </div>
     <div class="ob-dots">
@@ -133,8 +134,8 @@ body{opacity:0;transition:opacity .15s}</style>
       <span class="ob-dot"></span>
     </div>
     <div class="ob-actions">
-      <button id="ob-prev" class="btn btn-ghost" onclick="obPrev()" style="display:none">Zurück</button>
-      <button id="ob-next" class="btn btn-primary" onclick="obNext()">Weiter</button>
+      <button id="ob-prev" class="btn btn-ghost" onclick="obPrev()" style="display:none" data-i18n="ob.btn.back">Zurück</button>
+      <button id="ob-next" class="btn btn-primary" onclick="obNext()" data-i18n="ob.btn.next">Weiter</button>
     </div>
   </div>
 </div>
@@ -152,7 +153,7 @@ body{opacity:0;transition:opacity .15s}</style>
       <button id="child-switcher-btn" class="btn btn-ghost btn-sm" onclick="openChildSwitcher()">
         <span id="active-child-name">—</span> ▾
       </button>
-      <button class="btn btn-ghost btn-icon" onclick="toggleThemeUI()" title="Theme wechseln">
+      <button class="btn btn-ghost btn-icon" onclick="toggleThemeUI()" title="Theme wechseln" data-i18n-title="header.theme.title">
         <span id="theme-icon">☀️</span>
       </button>
     </div>
@@ -165,8 +166,8 @@ body{opacity:0;transition:opacity .15s}</style>
     <section class="page active" data-page="home">
       <!-- Notification banner -->
       <div id="notif-banner" class="hidden notif-banner">
-        <span>🔔 Benachrichtigungen aktivieren für Arzttermin-Erinnerungen</span>
-        <button class="btn btn-sm btn-primary" onclick="requestNotifPermission()">Aktivieren</button>
+        <span data-i18n="notif.banner.text">🔔 Benachrichtigungen aktivieren für Arzttermin-Erinnerungen</span>
+        <button class="btn btn-sm btn-primary" onclick="requestNotifPermission()" data-i18n="notif.banner.enable">Aktivieren</button>
         <button class="btn btn-sm btn-ghost" onclick="this.closest('.notif-banner').classList.add('hidden')">✕</button>
       </div>
 
@@ -185,15 +186,15 @@ body{opacity:0;transition:opacity .15s}</style>
 
       <!-- Quick action buttons -->
       <div class="quick-actions">
-        <button id="btn-sleep-toggle" class="quick-btn sleep-btn" onclick="toggleSleep()">🌙 Schlafen</button>
-        <button class="quick-btn feed-btn" onclick="openModal('feed-modal')">🍼 Fütterung</button>
-        <button class="quick-btn diaper-btn" onclick="openModal('diaper-modal')">🧷 Windel</button>
-        <button class="quick-btn fix-btn" onclick="openFixStartModal()">✏️ Schlafstart korrigieren</button>
+        <button id="btn-sleep-toggle" class="quick-btn sleep-btn" onclick="toggleSleep()" data-i18n="home.btn.sleep">🌙 Schlafen</button>
+        <button class="quick-btn feed-btn" onclick="openModal('feed-modal')" data-i18n="home.btn.feed">🍼 Fütterung</button>
+        <button class="quick-btn diaper-btn" onclick="openModal('diaper-modal')" data-i18n="home.btn.diaper">🧷 Windel</button>
+        <button class="quick-btn fix-btn" onclick="openFixStartModal()" data-i18n="home.btn.fix">✏️ Schlafstart korrigieren</button>
       </div>
 
       <!-- Today log -->
       <section class="log-section">
-        <h3 class="section-title">Heute</h3>
+        <h3 class="section-title" data-i18n="home.section.today">Heute</h3>
         <div id="today-log" class="log-list">
           <p class="empty-state">Noch keine Einträge heute 🌱</p>
         </div>
@@ -202,95 +203,95 @@ body{opacity:0;transition:opacity .15s}</style>
 
     <!-- TRACKER ───────────────────────────────────────────────── -->
     <section class="page" data-page="tracker">
-      <h2 class="page-title">Tracker</h2>
+      <h2 class="page-title" data-i18n="page.tracker.title">Tracker</h2>
       <!-- Feed section -->
       <section class="tracker-section">
-        <h3 class="section-title">🍼 Fütterung</h3>
+        <h3 class="section-title" data-i18n="tracker.section.feed">🍼 Fütterung</h3>
         <div class="input-row">
-          <select id="feed-type" class="input-field" aria-label="Fütterungsart">
-            <option value="Brust">Brust</option>
-            <option value="Flasche">Flasche</option>
-            <option value="Beikost">Beikost</option>
+          <select id="feed-type" class="input-field" data-i18n-aria-label="tracker.section.feed">
+            <option value="Brust" data-i18n="feed.type.breast">Brust</option>
+            <option value="Flasche" data-i18n="feed.type.bottle">Flasche</option>
+            <option value="Beikost" data-i18n="feed.type.solids">Beikost</option>
           </select>
-          <input type="number" id="feed-amount" class="input-field" placeholder="ml" min="0" max="500">
-          <button class="btn btn-primary" onclick="addFeedEntry()">Hinzufügen</button>
+          <input type="number" id="feed-amount" class="input-field" placeholder="ml" min="0" max="500" data-i18n-placeholder="tracker.feed.placeholder">
+          <button class="btn btn-primary" onclick="addFeedEntry()" data-i18n="tracker.btn.add">Hinzufügen</button>
         </div>
       </section>
       <!-- Diaper section -->
       <section class="tracker-section">
-        <h3 class="section-title">🧷 Windel</h3>
+        <h3 class="section-title" data-i18n="tracker.section.diaper">🧷 Windel</h3>
         <div class="input-row">
-          <select id="diaper-type" class="input-field" aria-label="Windelart">
-            <option value="Nass">Nass</option>
-            <option value="Schmutzig">Schmutzig</option>
-            <option value="Beides">Beides</option>
-            <option value="Trocken">Trocken</option>
+          <select id="diaper-type" class="input-field" data-i18n-aria-label="tracker.section.diaper">
+            <option value="Nass" data-i18n="diaper.type.wet">Nass</option>
+            <option value="Schmutzig" data-i18n="diaper.type.dirty">Schmutzig</option>
+            <option value="Beides" data-i18n="diaper.type.both">Beides</option>
+            <option value="Trocken" data-i18n="diaper.type.dry">Trocken</option>
           </select>
-          <button class="btn btn-primary" onclick="addDiaperEntry()">Hinzufügen</button>
+          <button class="btn btn-primary" onclick="addDiaperEntry()" data-i18n="tracker.btn.add">Hinzufügen</button>
         </div>
       </section>
       <!-- Recent entries -->
       <section class="tracker-section">
-        <h3 class="section-title">Zuletzt eingetragen</h3>
+        <h3 class="section-title" data-i18n="tracker.section.recent">Zuletzt eingetragen</h3>
         <div id="tracker-recent" class="log-list"></div>
       </section>
     </section>
 
     <!-- STATISTIK ─────────────────────────────────────────────── -->
     <section class="page" data-page="stats">
-      <h2 class="page-title">Statistik</h2>
+      <h2 class="page-title" data-i18n="page.stats.title">Statistik</h2>
       <!-- Weekly totals -->
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-icon">💤</span>
-          <span class="stat-label">Schlaf (7 T)</span>
+          <span class="stat-label" data-i18n="stats.label.sleep">Schlaf (7 T)</span>
           <span id="total-sleep" class="stat-value">—</span>
         </div>
         <div class="stat-card">
           <span class="stat-icon">🍼</span>
-          <span class="stat-label">Fütterungen (7 T)</span>
+          <span class="stat-label" data-i18n="stats.label.feed">Fütterungen (7 T)</span>
           <span id="total-feed" class="stat-value">0</span>
         </div>
         <div class="stat-card">
           <span class="stat-icon">🧷</span>
-          <span class="stat-label">Windeln (7 T)</span>
+          <span class="stat-label" data-i18n="stats.label.diaper">Windeln (7 T)</span>
           <span id="total-diaper" class="stat-value">0</span>
         </div>
       </div>
       <!-- Sleep bar chart -->
       <section class="chart-section">
-        <h3 class="section-title">Schlaf letzter 7 Tage</h3>
+        <h3 class="section-title" data-i18n="stats.chart.title">Schlaf letzter 7 Tage</h3>
         <canvas id="sleep-chart-canvas" width="320" height="120" class="sleep-chart"></canvas>
       </section>
     </section>
 
     <!-- VERLAUF ───────────────────────────────────────────────── -->
     <section class="page" data-page="verlauf">
-      <h2 class="page-title">Verlauf</h2>
+      <h2 class="page-title" data-i18n="page.verlauf.title">Verlauf</h2>
       <!-- Date filter -->
       <div class="filter-row">
         <input type="date" id="verlauf-date" class="input-field" onchange="filterVerlauf(this.value)">
-        <select id="verlauf-type" class="input-field" aria-label="Eintragstyp" onchange="filterVerlauf()">
-          <option value="all">Alle</option>
-          <option value="sleep">Schlaf</option>
-          <option value="feed">Fütterung</option>
-          <option value="diaper">Windel</option>
+        <select id="verlauf-type" class="input-field" aria-label="Eintragstyp" onchange="filterVerlauf()" data-i18n-aria-label="verlauf.filter.all">
+          <option value="all" data-i18n="verlauf.filter.all">Alle</option>
+          <option value="sleep" data-i18n="verlauf.filter.sleep">Schlaf</option>
+          <option value="feed" data-i18n="verlauf.filter.feed">Fütterung</option>
+          <option value="diaper" data-i18n="verlauf.filter.diaper">Windel</option>
         </select>
       </div>
       <div id="verlauf-list" class="log-list">
         <p class="empty-state">Lade Einträge…</p>
       </div>
-      <button class="btn btn-ghost btn-full" onclick="exportCSV()">📥 CSV exportieren</button>
+      <button class="btn btn-ghost btn-full" onclick="exportCSV()" data-i18n="verlauf.btn.export">📥 CSV exportieren</button>
     </section>
 
     <!-- WACHSTUM ──────────────────────────────────────────────── -->
     <section class="page" data-page="wachstum">
-      <h2 class="page-title">Wachstum</h2>
+      <h2 class="page-title" data-i18n="page.wachstum.title">Wachstum</h2>
       <!-- Chart type tabs -->
       <div class="segment-btns" id="growth-type-btns">
-        <button class="seg-btn active" data-type="weight" onclick="switchGrowthType('weight')">Gewicht</button>
-        <button class="seg-btn" data-type="height" onclick="switchGrowthType('height')">Größe</button>
-        <button class="seg-btn" data-type="head" onclick="switchGrowthType('head')">Kopfumfang</button>
+        <button class="seg-btn active" data-type="weight" onclick="switchGrowthType('weight')" data-i18n="growth.tab.weight">Gewicht</button>
+        <button class="seg-btn" data-type="height" onclick="switchGrowthType('height')" data-i18n="growth.tab.height">Größe</button>
+        <button class="seg-btn" data-type="head" onclick="switchGrowthType('head')" data-i18n="growth.tab.head">Kopfumfang</button>
       </div>
       <!-- WHO SVG chart -->
       <div class="growth-chart-wrap">
@@ -310,22 +311,22 @@ body{opacity:0;transition:opacity .15s}</style>
       <div class="growth-entries">
         <div id="growth-weight-panel" class="growth-panel">
           <div id="growth-weight-list" class="log-list"></div>
-          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('weight')">+ Gewicht eintragen</button>
+          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('weight')" data-i18n="growth.btn.weight">+ Gewicht eintragen</button>
         </div>
         <div id="growth-height-panel" class="growth-panel" style="display:none">
           <div id="growth-height-list" class="log-list"></div>
-          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('height')">+ Größe eintragen</button>
+          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('height')" data-i18n="growth.btn.height">+ Größe eintragen</button>
         </div>
         <div id="growth-head-panel" class="growth-panel" style="display:none">
           <div id="growth-head-list" class="log-list"></div>
-          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('head')">+ Kopfumfang eintragen</button>
+          <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="openHealthModal('head')" data-i18n="growth.btn.head">+ Kopfumfang eintragen</button>
         </div>
       </div>
     </section>
 
     <!-- MEILENSTEINE ─────────────────────────────────────────── -->
     <section class="page" data-page="meilensteine">
-      <h2 class="page-title">Meilensteine</h2>
+      <h2 class="page-title" data-i18n="page.meilensteine.title">Meilensteine</h2>
       <div id="milestone-list" class="milestone-list">
         <p class="empty-state">Lade Meilensteine…</p>
       </div>
@@ -333,35 +334,35 @@ body{opacity:0;transition:opacity .15s}</style>
 
     <!-- GESUNDHEIT ────────────────────────────────────────────── -->
     <section class="page" data-page="gesundheit">
-      <h2 class="page-title">Gesundheit</h2>
+      <h2 class="page-title" data-i18n="page.gesundheit.title">Gesundheit</h2>
       <!-- Weight & height -->
       <section class="health-section">
-        <h3 class="section-title">⚖️ Gewicht</h3>
+        <h3 class="section-title" data-i18n="health.section.weight">⚖️ Gewicht</h3>
         <div id="health-weight-list" class="log-list"></div>
       </section>
       <section class="health-section">
-        <h3 class="section-title">📏 Größe</h3>
+        <h3 class="section-title" data-i18n="health.section.height">📏 Größe</h3>
         <div id="health-height-list" class="log-list"></div>
       </section>
       <!-- Appointments -->
       <section class="health-section">
-        <h3 class="section-title">🏥 Arzttermine</h3>
+        <h3 class="section-title" data-i18n="health.section.appts">🏥 Arzttermine</h3>
         <div id="appt-list" class="log-list"></div>
         <div class="appt-form">
-          <input type="text" id="appt-title" class="input-field" placeholder="Termin (z.B. U5)" maxlength="100">
+          <input type="text" id="appt-title" class="input-field" placeholder="Termin (z.B. U5)" maxlength="100" data-i18n-placeholder="health.appt.placeholder.title">
           <input type="date" id="appt-date" class="input-field">
           <input type="time" id="appt-time" class="input-field" value="10:00">
-          <button class="btn btn-primary" onclick="addAppt()">Hinzufügen</button>
+          <button class="btn btn-primary" onclick="addAppt()" data-i18n="health.appt.btn.add">Hinzufügen</button>
         </div>
       </section>
     </section>
 
     <!-- TAGESPLAN ─────────────────────────────────────────────── -->
     <section class="page" data-page="tagesplan">
-      <h2 class="page-title">Tagesplan</h2>
+      <h2 class="page-title" data-i18n="page.tagesplan.title">Tagesplan</h2>
       <div class="tagesplan-form">
         <input type="time" id="tp-time" class="input-field" value="08:00">
-        <input type="text" id="tp-label" class="input-field" placeholder="Aktivität" maxlength="100">
+        <input type="text" id="tp-label" class="input-field" placeholder="Aktivität" maxlength="100" data-i18n-placeholder="tagesplan.placeholder">
         <button class="btn btn-primary" onclick="addTagesplan()">+</button>
       </div>
       <div id="tagesplan-list" class="log-list">
@@ -371,54 +372,54 @@ body{opacity:0;transition:opacity .15s}</style>
 
     <!-- EINSTELLUNGEN ─────────────────────────────────────────── -->
     <section class="page" data-page="einstellungen">
-      <h2 class="page-title">Einstellungen</h2>
+      <h2 class="page-title" data-i18n="page.einstellungen.title">Einstellungen</h2>
       <!-- Children -->
       <section class="settings-section">
-        <h3 class="section-title">👶 Kinder</h3>
+        <h3 class="section-title" data-i18n="settings.section.children">👶 Kinder</h3>
         <div id="children-list" class="children-list"></div>
-        <button class="btn btn-primary btn-full" onclick="openAddChild()">+ Kind hinzufügen</button>
+        <button class="btn btn-primary btn-full" onclick="openAddChild()" data-i18n="settings.btn.add_child">+ Kind hinzufügen</button>
       </section>
       <!-- Theme -->
       <section class="settings-section">
-        <h3 class="section-title">🎨 Erscheinungsbild</h3>
-        <button id="theme-toggle" class="btn btn-secondary btn-full" onclick="toggleThemeUI()">🌙 Dark Mode</button>
+        <h3 class="section-title" data-i18n="settings.section.appearance">🎨 Erscheinungsbild</h3>
+        <button id="theme-toggle" class="btn btn-secondary btn-full" onclick="toggleThemeUI()" data-i18n="settings.btn.dark_mode">🌙 Dark Mode</button>
       </section>
       <!-- PWA install -->
       <section class="settings-section" id="pwa-install-section">
-        <h3 class="section-title">📱 App installieren</h3>
-        <button id="pwa-install-btn" class="btn btn-primary btn-full hidden" onclick="installPWA()">Auf Homescreen hinzufügen</button>
-        <p class="hint">Öffne diese Seite in Chrome/Safari und füge sie zum Homescreen hinzu.</p>
+        <h3 class="section-title" data-i18n="settings.section.pwa">📱 App installieren</h3>
+        <button id="pwa-install-btn" class="btn btn-primary btn-full hidden" onclick="installPWA()" data-i18n="settings.pwa.btn.install">Auf Homescreen hinzufügen</button>
+        <p class="hint" data-i18n="settings.pwa.hint">Öffne diese Seite in Chrome/Safari und füge sie zum Homescreen hinzu.</p>
       </section>
       <!-- Backup / Restore -->
       <section class="settings-section">
-        <h3 class="section-title">💾 Backup & Restore</h3>
+        <h3 class="section-title" data-i18n="settings.section.backup">💾 Backup & Restore</h3>
         <div class="btn-row">
-          <button class="btn btn-secondary" onclick="backupJSON()">📦 Backup</button>
-          <button class="btn btn-secondary" onclick="restoreJSON()" id="restore-btn">♻️ Wiederherstellen</button>
+          <button class="btn btn-secondary" onclick="backupJSON()" data-i18n="settings.btn.backup">📦 Backup</button>
+          <button class="btn btn-secondary" onclick="restoreJSON()" id="restore-btn" data-i18n="settings.btn.restore">♻️ Wiederherstellen</button>
         </div>
       </section>
       <!-- Reminders -->
       <section class="settings-section">
-        <h3 class="section-title">🔔 Erinnerungen</h3>
+        <h3 class="section-title" data-i18n="settings.section.reminders">🔔 Erinnerungen</h3>
         <div class="form-row">
-          <label for="feed-reminder-interval">Fütterungs-Erinnerung</label>
+          <label for="feed-reminder-interval" data-i18n="settings.reminders.feed.label">Fütterungs-Erinnerung</label>
           <select id="feed-reminder-interval" class="input-field" onchange="setFeedReminder(this.value)">
-            <option value="0">Aus</option>
-            <option value="7200000">Alle 2 Stunden</option>
-            <option value="10800000">Alle 3 Stunden</option>
-            <option value="14400000">Alle 4 Stunden</option>
+            <option value="0" data-i18n="settings.reminders.off">Aus</option>
+            <option value="7200000" data-i18n="settings.reminders.2h">Alle 2 Stunden</option>
+            <option value="10800000" data-i18n="settings.reminders.3h">Alle 3 Stunden</option>
+            <option value="14400000" data-i18n="settings.reminders.4h">Alle 4 Stunden</option>
           </select>
         </div>
         <div class="form-row" style="margin-top:10px">
-          <label for="sleep-reminder-threshold">Schlaf-Warnung</label>
+          <label for="sleep-reminder-threshold" data-i18n="settings.reminders.sleep.label">Schlaf-Warnung</label>
           <select id="sleep-reminder-threshold" class="input-field" onchange="setSleepReminder(this.value)">
-            <option value="0">Aus</option>
-            <option value="7200000">Nach 2 Stunden</option>
-            <option value="10800000">Nach 3 Stunden</option>
-            <option value="14400000">Nach 4 Stunden</option>
+            <option value="0" data-i18n="settings.reminders.off">Aus</option>
+            <option value="7200000" data-i18n="settings.reminders.after2h">Nach 2 Stunden</option>
+            <option value="10800000" data-i18n="settings.reminders.after3h">Nach 3 Stunden</option>
+            <option value="14400000" data-i18n="settings.reminders.after4h">Nach 4 Stunden</option>
           </select>
         </div>
-        <p class="hint" style="margin-top:6px">Benachrichtigungen müssen erlaubt sein.</p>
+        <p class="hint" style="margin-top:6px" data-i18n="settings.reminders.hint">Benachrichtigungen müssen erlaubt sein.</p>
       </section>
       <!-- Version info -->
       <section class="settings-section">
@@ -430,24 +431,24 @@ body{opacity:0;transition:opacity .15s}</style>
 
   <!-- ── Bottom Tab Bar ──────────────────────────────────────── -->
   <nav class="nav-bottom" aria-label="Hauptnavigation">
-    <button class="nav-btn active" data-page="home"          aria-label="Start">🏠<span>Start</span></button>
-    <button class="nav-btn"       data-page="tracker"        aria-label="Tracker">📋<span>Tracker</span></button>
-    <button class="nav-btn"       data-page="stats"          aria-label="Statistik">📊<span>Stats</span></button>
-    <button class="nav-btn"       data-page="verlauf"        aria-label="Verlauf">📅<span>Verlauf</span></button>
-    <button class="nav-btn"       data-page="mehr-open"      aria-label="Mehr" onclick="toggleMehrSheet()">⋯<span>Mehr</span></button>
+    <button class="nav-btn active" data-page="home"          aria-label="Start" data-i18n-aria-label="nav.home">🏠<span data-i18n="nav.home">Start</span></button>
+    <button class="nav-btn"       data-page="tracker"        aria-label="Tracker" data-i18n-aria-label="nav.tracker">📋<span data-i18n="nav.tracker">Tracker</span></button>
+    <button class="nav-btn"       data-page="stats"          aria-label="Statistik" data-i18n-aria-label="nav.stats">📊<span data-i18n="nav.stats">Stats</span></button>
+    <button class="nav-btn"       data-page="verlauf"        aria-label="Verlauf" data-i18n-aria-label="nav.verlauf">📅<span data-i18n="nav.verlauf">Verlauf</span></button>
+    <button class="nav-btn"       data-page="mehr-open"      aria-label="Mehr" onclick="toggleMehrSheet()" data-i18n-aria-label="nav.more">⋯<span data-i18n="nav.more">Mehr</span></button>
   </nav>
 
   <!-- ── Mehr Bottom Sheet ────────────────────────────────────── -->
   <div id="mehr-overlay" class="mehr-overlay hidden" onclick="closeMehrSheet(event)">
     <div class="mehr-sheet">
       <div class="mehr-handle"></div>
-      <h3 class="mehr-title">Mehr</h3>
+      <h3 class="mehr-title" data-i18n="mehr.title">Mehr</h3>
       <div class="mehr-grid">
-        <button class="mehr-btn" onclick="gotoPage('wachstum')">📈<span>Wachstum</span></button>
-        <button class="mehr-btn" onclick="gotoPage('meilensteine')">🏆<span>Meilensteine</span></button>
-        <button class="mehr-btn" onclick="gotoPage('gesundheit')">🏥<span>Gesundheit</span></button>
-        <button class="mehr-btn" onclick="gotoPage('tagesplan')">📝<span>Tagesplan</span></button>
-        <button class="mehr-btn" onclick="gotoPage('einstellungen')">⚙️<span>Einstellungen</span></button>
+        <button class="mehr-btn" onclick="gotoPage('wachstum')">📈<span data-i18n="mehr.wachstum">Wachstum</span></button>
+        <button class="mehr-btn" onclick="gotoPage('meilensteine')">🏆<span data-i18n="mehr.meilensteine">Meilensteine</span></button>
+        <button class="mehr-btn" onclick="gotoPage('gesundheit')">🏥<span data-i18n="mehr.gesundheit">Gesundheit</span></button>
+        <button class="mehr-btn" onclick="gotoPage('tagesplan')">📝<span data-i18n="mehr.tagesplan">Tagesplan</span></button>
+        <button class="mehr-btn" onclick="gotoPage('einstellungen')">⚙️<span data-i18n="mehr.einstellungen">Einstellungen</span></button>
       </div>
     </div>
   </div>
@@ -459,19 +460,19 @@ body{opacity:0;transition:opacity .15s}</style>
 <!-- Fix Sleep Start Modal -->
 <div id="fix-start-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Schlafbeginn korrigieren">
   <div class="modal-card">
-    <h3 class="modal-title">✏️ Schlafbeginn korrigieren</h3>
+    <h3 class="modal-title" data-i18n="modal.fix.title">✏️ Schlafbeginn korrigieren</h3>
     <input type="hidden" id="fs-entry-id">
     <div class="segment-btns" id="fs-day-btns">
-      <button class="seg-btn active" data-day="today"     onclick="fsDaySelect(this)">Heute</button>
-      <button class="seg-btn"        data-day="yesterday" onclick="fsDaySelect(this)">Gestern</button>
+      <button class="seg-btn active" data-day="today"     onclick="fsDaySelect(this)" data-i18n="modal.fix.day.today">Heute</button>
+      <button class="seg-btn"        data-day="yesterday" onclick="fsDaySelect(this)" data-i18n="modal.fix.day.yesterday">Gestern</button>
     </div>
     <div class="form-row">
-      <label for="fs-time-input">Uhrzeit</label>
+      <label for="fs-time-input" data-i18n="modal.fix.time.label">Uhrzeit</label>
       <input type="time" id="fs-time-input" class="input-field">
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('fix-start-modal')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveFixStart()">Speichern</button>
+      <button class="btn btn-ghost" onclick="closeModal('fix-start-modal')" data-i18n="modal.btn.cancel">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveFixStart()" data-i18n="modal.btn.save">Speichern</button>
     </div>
   </div>
 </div>
@@ -479,27 +480,27 @@ body{opacity:0;transition:opacity .15s}</style>
 <!-- Add Child Modal -->
 <div id="add-child-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Kind hinzufügen">
   <div class="modal-card">
-    <h3 class="modal-title">👶 Kind hinzufügen</h3>
+    <h3 class="modal-title" data-i18n="modal.child.title">👶 Kind hinzufügen</h3>
     <div class="form-row">
-      <label for="new-child-name">Name *</label>
-      <input type="text" id="new-child-name" class="input-field" placeholder="z.B. Lena" autocomplete="off" maxlength="50">
+      <label for="new-child-name" data-i18n="modal.child.name.label">Name *</label>
+      <input type="text" id="new-child-name" class="input-field" placeholder="z.B. Lena" autocomplete="off" maxlength="50" data-i18n-placeholder="modal.child.name.placeholder">
     </div>
     <div class="form-row">
-      <label for="new-child-gender">Geschlecht</label>
+      <label for="new-child-gender" data-i18n="modal.child.gender.label">Geschlecht</label>
       <select id="new-child-gender" class="input-field">
-        <option value="none">Keine Angabe</option>
-        <option value="female">Weiblich</option>
-        <option value="male">Männlich</option>
-        <option value="diverse">Divers</option>
+        <option value="none" data-i18n="modal.child.gender.none">Keine Angabe</option>
+        <option value="female" data-i18n="modal.child.gender.female">Weiblich</option>
+        <option value="male" data-i18n="modal.child.gender.male">Männlich</option>
+        <option value="diverse" data-i18n="modal.child.gender.diverse">Divers</option>
       </select>
     </div>
     <div class="form-row">
-      <label for="new-child-birthday">Geburtsdatum</label>
+      <label for="new-child-birthday" data-i18n="modal.child.birthday.label">Geburtsdatum</label>
       <input type="date" id="new-child-birthday" class="input-field">
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('add-child-modal')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveNewChild()">Hinzufügen</button>
+      <button class="btn btn-ghost" onclick="closeModal('add-child-modal')" data-i18n="modal.btn.cancel">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveNewChild()" data-i18n="modal.child.btn.add">Hinzufügen</button>
     </div>
   </div>
 </div>
@@ -507,22 +508,22 @@ body{opacity:0;transition:opacity .15s}</style>
 <!-- Feed Modal -->
 <div id="feed-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
   <div class="modal-card">
-    <h3 class="modal-title">🍼 Fütterung eintragen</h3>
+    <h3 class="modal-title" data-i18n="modal.feed.title">🍼 Fütterung eintragen</h3>
     <div class="form-row">
-      <label>Art</label>
-      <select id="modal-feed-type" class="input-field">
-        <option value="Brust">Brust</option>
-        <option value="Flasche">Flasche</option>
-        <option value="Beikost">Beikost</option>
+      <label data-i18n="modal.feed.type.label">Art</label>
+      <select id="modal-feed-type" class="input-field" data-i18n-aria-label="modal.feed.type.label">
+        <option value="Brust" data-i18n="feed.type.breast">Brust</option>
+        <option value="Flasche" data-i18n="feed.type.bottle">Flasche</option>
+        <option value="Beikost" data-i18n="feed.type.solids">Beikost</option>
       </select>
     </div>
     <div class="form-row">
-      <label>Menge (ml)</label>
-      <input type="number" id="modal-feed-amount" class="input-field" placeholder="z.B. 120" min="0" max="500" step="1">
+      <label data-i18n="modal.feed.amount.label">Menge (ml)</label>
+      <input type="number" id="modal-feed-amount" class="input-field" placeholder="z.B. 120" min="0" max="500" step="1" data-i18n-placeholder="modal.feed.amount.placeholder">
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('feed-modal')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveFeedModal()">Speichern</button>
+      <button class="btn btn-ghost" onclick="closeModal('feed-modal')" data-i18n="modal.btn.cancel">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveFeedModal()" data-i18n="modal.btn.save">Speichern</button>
     </div>
   </div>
 </div>
@@ -530,16 +531,16 @@ body{opacity:0;transition:opacity .15s}</style>
 <!-- Diaper Modal -->
 <div id="diaper-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
   <div class="modal-card">
-    <h3 class="modal-title">🧷 Windel eintragen</h3>
+    <h3 class="modal-title" data-i18n="modal.diaper.title">🧷 Windel eintragen</h3>
     <div class="segment-btns">
-      <button class="seg-btn active" data-kind="Nass"      onclick="diaperSelect(this)">Nass</button>
-      <button class="seg-btn"        data-kind="Schmutzig" onclick="diaperSelect(this)">Schmutzig</button>
-      <button class="seg-btn"        data-kind="Beides"    onclick="diaperSelect(this)">Beides</button>
-      <button class="seg-btn"        data-kind="Trocken"   onclick="diaperSelect(this)">Trocken</button>
+      <button class="seg-btn active" data-kind="Nass"      onclick="diaperSelect(this)" data-i18n="diaper.type.wet">Nass</button>
+      <button class="seg-btn"        data-kind="Schmutzig" onclick="diaperSelect(this)" data-i18n="diaper.type.dirty">Schmutzig</button>
+      <button class="seg-btn"        data-kind="Beides"    onclick="diaperSelect(this)" data-i18n="diaper.type.both">Beides</button>
+      <button class="seg-btn"        data-kind="Trocken"   onclick="diaperSelect(this)" data-i18n="diaper.type.dry">Trocken</button>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('diaper-modal')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveDiaperModal()">Speichern</button>
+      <button class="btn btn-ghost" onclick="closeModal('diaper-modal')" data-i18n="modal.btn.cancel">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveDiaperModal()" data-i18n="modal.btn.save">Speichern</button>
     </div>
   </div>
 </div>
@@ -547,21 +548,21 @@ body{opacity:0;transition:opacity .15s}</style>
 <!-- Health Entry Modal -->
 <div id="health-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="health-modal-title">
   <div class="modal-card">
-    <h3 class="modal-title" id="health-modal-title">Messung eintragen</h3>
+    <h3 class="modal-title" id="health-modal-title" data-i18n="modal.health.title">Messung eintragen</h3>
     <div class="form-row">
-      <label id="health-modal-label">Wert</label>
+      <label id="health-modal-label" data-i18n="modal.health.value.label">Wert</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="number" id="health-modal-value" class="input-field" style="flex:1" step="1" min="0" inputmode="decimal">
         <span id="health-modal-unit" style="font-size:13px;color:var(--muted);min-width:20px">g</span>
       </div>
     </div>
     <div class="form-row">
-      <label>Datum</label>
+      <label data-i18n="modal.health.date.label">Datum</label>
       <input type="date" id="health-modal-date" class="input-field">
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('health-modal')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveHealthModal()">Speichern</button>
+      <button class="btn btn-ghost" onclick="closeModal('health-modal')" data-i18n="modal.btn.cancel">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveHealthModal()" data-i18n="modal.btn.save">Speichern</button>
     </div>
   </div>
 </div>
@@ -570,9 +571,9 @@ body{opacity:0;transition:opacity .15s}</style>
 <div id="child-switcher-overlay" class="mehr-overlay hidden" onclick="closeChildSwitcher(event)">
   <div class="mehr-sheet">
     <div class="mehr-handle"></div>
-    <h3 class="mehr-title">Kind wechseln</h3>
+    <h3 class="mehr-title" data-i18n="child.switcher.title">Kind wechseln</h3>
     <div id="child-switcher-list" class="log-list"></div>
-    <button class="btn btn-primary btn-full" style="margin:12px 0 8px" onclick="openAddChild(); closeChildSwitcher()">+ Kind hinzufügen</button>
+    <button class="btn btn-primary btn-full" style="margin:12px 0 8px" onclick="openAddChild(); closeChildSwitcher()" data-i18n="child.switcher.btn.add">+ Kind hinzufügen</button>
   </div>
 </div>
 
