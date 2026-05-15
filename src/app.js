@@ -1189,7 +1189,7 @@ window._app.renderGrowthChart = updateGrowthView;
 
 // Patch boot to update header after active child loads
 const _origBoot = window._app;
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // After boot, update header name
   setTimeout(updateHeaderChildName, 600);
   // Garbage-collect tombstones older than 30 days
