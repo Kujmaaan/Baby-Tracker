@@ -83,6 +83,7 @@ async function boot() {
   // 3. Theme
   await applyTheme(cfg.theme || 'light');
 
+  document.documentElement.lang = getLanguage();
   applyI18n();
 
   // 4. Firebase (non-blocking)
@@ -598,6 +599,10 @@ async function renderSettings() {
       : '<p class="empty-state">Noch kein Kind. Füge eines hinzu!</p>';
   }
 
+  // Language selector
+  const langSel = $('language-select');
+  if (langSel) langSel.value = getLanguage();
+
   // Theme toggle
   const themeBtn = $('theme-toggle');
   if (themeBtn) {
@@ -662,6 +667,26 @@ window.toggleThemeUI = async function() {
   showToast(next === 'light' ? t('toast.theme.light') : t('toast.theme.dark'));
   await renderSettings();
 };
+
+// ── Language switcher ─────────────────────────────────────────────────────────
+window.setAppLanguage = async function(lang) {
+  setLanguage(lang);
+  document.documentElement.lang = lang;
+  applyI18n();
+  // Re-render current page content
+  switch (currentPage) {
+    case 'home':           await renderHome();        break;
+    case 'tracker':        await renderTracker();     break;
+    case 'stats':          await renderStats();       break;
+    case 'verlauf':        await renderVerlauf();     break;
+    case 'wachstum':       await renderWachstum();    break;
+    case 'meilensteine':   await renderMilestones();  break;
+    case 'gesundheit':     await renderGesundheit();  break;
+    case 'tagesplan':      await renderTagesplan();   break;
+    case 'einstellungen':  await renderSettings();    break;
+  }
+};
+window.setAppLanguage = window.setAppLanguage; // expose for onclick
 
 // ── Backup / Restore ──────────────────────────────────────────────────────────
 window.backupJSON = async function() {

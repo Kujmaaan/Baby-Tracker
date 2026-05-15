@@ -421,6 +421,18 @@ body{opacity:0;transition:opacity .15s}</style>
         </div>
         <p class="hint" style="margin-top:6px" data-i18n="settings.reminders.hint">Benachrichtigungen müssen erlaubt sein.</p>
       </section>
+      <!-- Language -->
+      <section class="settings-section">
+        <h3 class="section-title" data-i18n="settings.section.language">🌍 Sprache</h3>
+        <div class="form-row">
+          <label for="language-select" data-i18n="settings.language.label">Sprache</label>
+          <select id="language-select" class="input-field" onchange="setAppLanguage(this.value)">
+            <option value="de" data-i18n="settings.language.de">Deutsch</option>
+            <option value="en" data-i18n="settings.language.en">English</option>
+          </select>
+        </div>
+      </section>
+
       <!-- Version info -->
       <section class="settings-section">
         <p class="hint">Baby Tracker v3.0 · <a href="https://github.com/Kujmaaan/Baby-Tracker" target="_blank" rel="noopener">GitHub</a></p>
