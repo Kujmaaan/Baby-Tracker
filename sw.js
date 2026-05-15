@@ -1,11 +1,11 @@
-// ─── Service Worker v25 — baby-tracker ───────────────────────────────────────
+// ─── Service Worker v26 — baby-tracker ───────────────────────────────────────
 // Strategy:
 //   • App shell (HTML/JS/CSS/manifest) → Network-first, fallback to cache
 //   • Google Fonts                     → Cache-first (immutable)
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v25';
+const CACHE_VER   = 'baby-tracker-v26';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -31,6 +31,7 @@ const APP_SHELL = [
   './src/growth.js',
   './src/notif.js',
   './src/debug.js',
+  './src/i18n.js',
 ];
 
 const SKIP_CACHE_PATTERNS = [
