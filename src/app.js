@@ -48,6 +48,7 @@ import {
   startSleepMonitor, stopSleepMonitor, getSleepThresholdMs,
   initReminders,
 } from './notif.js';
+import { t, setLanguage, getLanguage, applyI18n } from './i18n.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await boot();
   } catch (err) {
     console.error('[App] Boot error:', err);
-    showToast('Startfehler — bitte Seite neu laden.', 'error');
+    showToast(t('toast.start_error'), 'error');
   }
 });
 
@@ -81,6 +82,8 @@ async function boot() {
 
   // 3. Theme
   await applyTheme(cfg.theme || 'light');
+
+  applyI18n();
 
   // 4. Firebase (non-blocking)
   showFbLoading();
@@ -211,10 +214,10 @@ async function renderHome() {
   const sleepBtn = $('btn-sleep-toggle');
   if (sleepBtn) {
     if (currentSleep) {
-      sleepBtn.textContent = `😴 Aufgewacht (${fmtTime(currentSleep.ts)})`;
+      sleepBtn.textContent = t('home.btn.sleep.active', { time: fmtTime(currentSleep.ts) });
       sleepBtn.classList.add('active');
     } else {
-      sleepBtn.textContent = '🌙 Schlafen';
+      sleepBtn.textContent = t('home.btn.sleep');
       sleepBtn.classList.remove('active');
     }
   }
@@ -242,7 +245,7 @@ async function renderTodayLog() {
   ].sort((a, b) => b.ts - a.ts);
 
   if (!all.length) {
-    logEl.innerHTML = '<p class="empty-state">Noch keine Einträge heute 🌱</p>';
+    logEl.innerHTML = `<p class="empty-state">${t('home.empty')}</p>`;
     return;
   }
 
@@ -271,7 +274,7 @@ async function renderTodayLog() {
 // ── Sleep toggle ──────────────────────────────────────────────────────────────
 
 window.toggleSleep = async function() {
-  if (!activeChild) { showToast('Bitte zuerst ein Kind anlegen.'); return; }
+  if (!activeChild) { showToast(t('toast.no_child')); return; }
   const entries = await getEntriesByChild(STORES.SLEEP, activeChild.id);
   const ongoing = entries.find(isSleeping);
 
@@ -280,7 +283,7 @@ window.toggleSleep = async function() {
     const end    = Date.now();
     const updated = await updateEntry(STORES.SLEEP, ongoing.id, { end });
     await fbWriteEntry(STORES.SLEEP, updated);
-    showToast(`Aufgewacht! Geschlafen: ${fmtDur(end - ongoing.ts)}`);
+    showToast(t('toast.woke_up', { duration: fmtDur(end - ongoing.ts) }));
   } else {
     // Start sleep — guard against duplicate open sessions
     const guard = activeSleepGuard(entries);
@@ -291,7 +294,7 @@ window.toggleSleep = async function() {
       end:     null,
     }, DEVICE_ID);
     await fbWriteEntry(STORES.SLEEP, entry);
-    showToast('Schläft jetzt 😴');
+    showToast(t('toast.sleeping'));
   }
   await renderHome();
 };
@@ -301,7 +304,7 @@ window.toggleSleep = async function() {
 window.openFixStartModal = async function() {
   const entries = await getEntriesByChild(STORES.SLEEP, activeChild?.id || '');
   const ongoing = entries.find(isSleeping);
-  if (!ongoing) { showToast('Kein laufender Schlaf.'); return; }
+  if (!ongoing) { showToast(t('toast.no_sleep')); return; }
   $('fs-entry-id').value  = ongoing.id;
   $('fs-time-input').value = fmtTime(ongoing.ts);
   // Default: today
@@ -321,17 +324,17 @@ window.saveFixStart = async function() {
   if (errors.length) { showToast(errors.join(' '), 'error'); return; }
 
   const entry   = await getEntry(STORES.SLEEP, id);
-  if (!entry) { showToast('Eintrag nicht gefunden.', 'error'); return; }
+  if (!entry) { showToast(t('toast.entry_not_found'), 'error'); return; }
 
   // If there's an end time, validate end > new start
   if (entry.end && entry.end <= ts) {
-    showToast('Schlafbeginn muss vor dem Schlafende liegen.', 'error'); return;
+    showToast(t('toast.sleep_before_end'), 'error'); return;
   }
 
   const updated = await updateEntry(STORES.SLEEP, id, { ts });
   await fbWriteEntry(STORES.SLEEP, updated);
   closeModal('fix-start-modal');
-  showToast('Schlafbeginn korrigiert ✓');
+  showToast(t('toast.sleep_fixed'));
   await renderHome();
 };
 
@@ -401,7 +404,7 @@ async function updateGrowthView(type = 'weight') {
   const badgeEl = $('growth-percentile');
   if (badgeEl) {
     if (percentile) {
-      badgeEl.textContent = `Aktuell: ${percentile}`;
+      badgeEl.textContent = t('growth.percentile.current', { value: percentile });
       badgeEl.classList.remove('hidden');
     } else {
       badgeEl.classList.add('hidden');
@@ -495,7 +498,7 @@ window.addHealthEntry = async function(type, value, ts = Date.now()) {
   if (!activeChild || isNaN(value) || value <= 0) return;
   const entry = await addEntry(STORES.HEALTH, { childId: activeChild.id, ts, type, value }, DEVICE_ID);
   await fbWriteEntry(STORES.HEALTH, entry);
-  showToast('Messung gespeichert ✓');
+  showToast(t('toast.health_saved'));
   await updateGrowthView(type);
   await renderGesundheit();
 };
@@ -504,7 +507,7 @@ window.deleteHealthEntry = async function(id) {
   if (!activeChild) return;
   const path = fbPath(STORES.HEALTH, id).replace('/' + id, '');
   await softDelete(STORES.HEALTH, id, path, DEVICE_ID);
-  showToast('Eintrag gelöscht');
+  showToast(t('toast.entry_deleted'));
   const activeType = document.querySelector('#growth-type-btns .seg-btn.active')?.dataset.type || 'weight';
   await updateGrowthView(activeType);
   await renderGesundheit();
@@ -515,14 +518,14 @@ window.addAppt = async function() {
   const title   = clampStr($('appt-title')?.value?.trim() || '', MAX_LENGTHS.apptTitle);
   const dateStr = $('appt-date')?.value;
   const timeStr = $('appt-time')?.value || '00:00';
-  if (!title || !dateStr) { showToast('Bitte Titel und Datum angeben.', 'error'); return; }
+  if (!title || !dateStr) { showToast(t('toast.appt_fields'), 'error'); return; }
   const [y, m, d] = dateStr.split('-').map(Number);
   const [h, min]  = timeStr.split(':').map(Number);
   const ts = new Date(y, m - 1, d, h, min, 0, 0).getTime();
   const entry = await addEntry(STORES.APPT, { childId: activeChild.id, ts, title }, DEVICE_ID);
   await fbWriteEntry(STORES.APPT, entry);
   scheduleApptNotif(entry);
-  showToast('Termin gespeichert ✓');
+  showToast(t('toast.appt_saved'));
   if ($('appt-title')) $('appt-title').value = '';
   if ($('appt-date'))  $('appt-date').value  = '';
   await renderGesundheit();
@@ -550,7 +553,7 @@ async function renderTagesplan() {
   const listEl  = $('tagesplan-list');
   if (!listEl) return;
   if (!entries.length) {
-    listEl.innerHTML = '<p class="empty-state">Kein Plan für heute — füge Aktivitäten hinzu 📝</p>';
+    listEl.innerHTML = `<p class="empty-state">${t('tagesplan.empty')}</p>`;
     return;
   }
   listEl.innerHTML = entries
@@ -598,7 +601,7 @@ async function renderSettings() {
   // Theme toggle
   const themeBtn = $('theme-toggle');
   if (themeBtn) {
-    themeBtn.textContent = cfg.theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+    themeBtn.textContent = cfg.theme === 'light' ? t('settings.btn.dark_mode') : t('settings.btn.light_mode');
   }
 }
 
@@ -606,7 +609,7 @@ window.switchChild = async function(id) {
   await setActiveChild(id);
   activeChild = await getActiveChild();
   cfg = await getCfg();
-  showToast(`Aktives Kind: ${activeChild?.name}`);
+  showToast(t('toast.active_child', { name: activeChild?.name }));
   await renderSettings();
   await renderHome();
 };
@@ -619,11 +622,11 @@ window.saveNewChild = async function() {
   const name     = $('new-child-name')?.value?.trim();
   const gender   = $('new-child-gender')?.value || 'none';
   const birthday = $('new-child-birthday')?.value || '';
-  if (!name) { showToast('Bitte einen Namen eingeben.', 'error'); return; }
+  if (!name) { showToast(t('toast.child_name_required'), 'error'); return; }
   const child = await addChild({ name, gender, birthday });
   activeChild = await getActiveChild();
   closeModal('add-child-modal');
-  showToast(`${child.name} hinzugefügt ✓`);
+  showToast(t('toast.child_added', { name: child.name }));
   await renderSettings();
 };
 
@@ -656,7 +659,7 @@ window.setSleepReminder = async function(val) {
 window.toggleThemeUI = async function() {
   const next = await toggleTheme();
   cfg = await getCfg();
-  showToast(next === 'light' ? '☀️ Light Mode' : '🌙 Dark Mode');
+  showToast(next === 'light' ? t('toast.theme.light') : t('toast.theme.dark'));
   await renderSettings();
 };
 
@@ -669,7 +672,7 @@ window.backupJSON = async function() {
   a.href     = URL.createObjectURL(blob);
   a.download = `baby-tracker-backup-${toLocalDateStr(new Date())}.json`;
   a.click();
-  showToast('Backup erstellt ✓');
+  showToast(t('toast.backup_created'));
 };
 
 window.restoreJSON = function() {
@@ -682,12 +685,12 @@ window.restoreJSON = function() {
     try {
       const text = await file.text();
       let data;
-      try { data = JSON.parse(text); } catch { showToast('Ungültiges JSON.', 'error'); return; }
+      try { data = JSON.parse(text); } catch { showToast(t('toast.json_invalid'), 'error'); return; }
 
       // 1. Security validation
       const { ok, errors } = validateImport(data, file.size);
       if (!ok) {
-        showToast('Backup ungültig: ' + errors[0], 'error');
+        showToast(t('toast.backup_invalid', { reason: errors[0] }), 'error');
         return;
       }
 
@@ -696,7 +699,7 @@ window.restoreJSON = function() {
       window._restoreData = data; // stash for modal confirm
       showRestorePreviewModal(preview);
     } catch (err) {
-      showToast('Fehler: ' + err.message, 'error');
+      showToast(t('toast.error', { message: err.message }), 'error');
     }
   };
   inp.click();
@@ -752,7 +755,7 @@ window.confirmRestore = async function(mode) {
   if (!data) return;
   window.closeRestoreModal();
 
-  showToast('Restore läuft…');
+  showToast(t('toast.restore_running'));
   const result = await safeRestore(data, mode, (step, total, label) => {
     console.info(`[Restore] ${step}/${total}: ${label}`);
   });
@@ -766,14 +769,14 @@ window.confirmRestore = async function(mode) {
     showToast(msg);
     await showPage(currentPage);
   } else {
-    showToast('Restore fehlgeschlagen — Daten unverändert.', 'error');
+    showToast(t('toast.restore_failed'), 'error');
     result.errors.forEach(e => console.error('[Restore]', e));
   }
 };
 
 window.rollbackRestore = async function() {
-  if (!getSnapshot()) { showToast('Kein Snapshot verfügbar.', 'error'); return; }
-  if (!confirm('Zum letzten Snapshot zurückkehren?')) return;
+  if (!getSnapshot()) { showToast(t('toast.no_snapshot'), 'error'); return; }
+  if (!confirm(t('confirm.snapshot'))) return;
   const result = await rollbackToSnapshot();
   showToast(result.message, result.success ? 'success' : 'error');
   if (result.success) {
@@ -804,7 +807,7 @@ window.exportCSV = async function() {
   a.href     = URL.createObjectURL(blob);
   a.download = `baby-tracker-${safeFilename(activeChild.name)}-${toLocalDateStr(new Date())}.csv`;
   a.click();
-  showToast('CSV exportiert ✓');
+  showToast(t('toast.csv_exported'));
 };
 
 // ── PWA Install ───────────────────────────────────────────────────────────────
@@ -820,7 +823,7 @@ window.installPWA = async function() {
   if (outcome === 'accepted') {
     deferredPWA = null;
     $('pwa-install-btn')?.classList.add('hidden');
-    showToast('App installiert ✓');
+    showToast(t('toast.pwa_installed'));
   }
 };
 
@@ -834,7 +837,7 @@ async function showNotifBannerIfNeeded() {
 window.requestNotifPermission = async function() {
   const perm = await Notification.requestPermission();
   $('notif-banner')?.classList.add('hidden');
-  if (perm === 'granted') showToast('Benachrichtigungen aktiviert ✓');
+  if (perm === 'granted') showToast(t('toast.notif_enabled'));
 };
 
 // ── Online status ─────────────────────────────────────────────────────────────
@@ -893,13 +896,13 @@ function showUndoToast(msg, undoFn) {
   }
   clearTimeout(toast._timer);
   toast.className = 'toast toast-undo show';
-  toast.innerHTML = `<span>${msg}</span><button class="toast-undo-btn" style="background:none;border:none;color:#fff;font-weight:700;cursor:pointer;text-decoration:underline;margin-left:auto">Rückgängig</button>`;
+  toast.innerHTML = `<span>${msg}</span><button class="toast-undo-btn" style="background:none;border:none;color:#fff;font-weight:700;cursor:pointer;text-decoration:underline;margin-left:auto">${t('toast.undo')}</button>`;
   let dismissed = false;
   const dismiss = () => { if (!dismissed) { dismissed = true; toast.classList.remove('show'); } };
   toast.querySelector('.toast-undo-btn').onclick = async () => {
     dismiss();
-    try { await undoFn(); showToast('Wiederhergestellt ✓'); }
-    catch (e) { showToast('Fehler: ' + e.message, 'error'); }
+    try { await undoFn(); showToast(t('toast.restored')); }
+    catch (e) { showToast(t('toast.error', { message: e.message }), 'error'); }
   };
   toast._timer = setTimeout(dismiss, 5000);
 }
@@ -933,7 +936,7 @@ window._app = {
 
 // ── Feed entry ────────────────────────────────────────────────────────────────
 window._addFeedEntry = async function({ type, amount }) {
-  if (!activeChild) { showToast('Bitte zuerst ein Kind anlegen.'); return; }
+  if (!activeChild) { showToast(t('toast.no_child')); return; }
   const entry = await addEntry(STORES.FEED, {
     childId: activeChild.id,
     ts:      Date.now(),
@@ -941,28 +944,28 @@ window._addFeedEntry = async function({ type, amount }) {
     amount:  amount || null,
   }, DEVICE_ID);
   await fbWriteEntry(STORES.FEED, entry);
-  showToast(`🍼 ${type} eingetragen`);
+  showToast(t('toast.feed_added', { type }));
   await renderHome();
   await renderTrackerRecent();
 };
 
 // ── Diaper entry ──────────────────────────────────────────────────────────────
 window._addDiaperEntry = async function({ kind }) {
-  if (!activeChild) { showToast('Bitte zuerst ein Kind anlegen.'); return; }
+  if (!activeChild) { showToast(t('toast.no_child')); return; }
   const entry = await addEntry(STORES.DIAPER, {
     childId: activeChild.id,
     ts:      Date.now(),
     kind,
   }, DEVICE_ID);
   await fbWriteEntry(STORES.DIAPER, entry);
-  showToast(`🧷 ${kind} eingetragen`);
+  showToast(t('toast.diaper_added', { kind }));
   await renderHome();
   await renderTrackerRecent();
 };
 
 // ── Tagesplan entry ───────────────────────────────────────────────────────────
 window._addTagesplan = async function({ timeStr, label }) {
-  if (!activeChild) { showToast('Bitte zuerst ein Kind anlegen.'); return; }
+  if (!activeChild) { showToast(t('toast.no_child')); return; }
   const [h, m] = timeStr.split(':').map(Number);
   const today  = new Date();
   const ts     = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m, 0, 0).getTime();
@@ -1052,7 +1055,7 @@ async function filterVerlauf(dateOverride) {
   ].sort((a, b) => b.ts - a.ts);
 
   if (!all.length) {
-    listEl.innerHTML = '<p class="empty-state">Keine Einträge für diesen Zeitraum.</p>';
+    listEl.innerHTML = `<p class="empty-state">${t('verlauf.empty')}</p>`;
     return;
   }
 
