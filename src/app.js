@@ -276,7 +276,9 @@ async function renderTodayLog() {
 
 window.toggleSleep = async function() {
   if (!activeChild) { showToast(t('toast.no_child')); return; }
-  const entries = await getEntriesByChild(STORES.SLEEP, activeChild.id);
+  // Range: last 7 days — an ongoing sleep can't be older than that
+  const _sleepFrom = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const entries = await getEntriesByChildRange(STORES.SLEEP, activeChild.id, _sleepFrom, Date.now());
   const ongoing = entries.find(isSleeping);
 
   if (ongoing) {
@@ -303,7 +305,8 @@ window.toggleSleep = async function() {
 // ── Fix Sleep Start ───────────────────────────────────────────────────────────
 
 window.openFixStartModal = async function() {
-  const entries = await getEntriesByChild(STORES.SLEEP, activeChild?.id || '');
+  const _from = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const entries = await getEntriesByChildRange(STORES.SLEEP, activeChild?.id || '', _from, Date.now());
   const ongoing = entries.find(isSleeping);
   if (!ongoing) { showToast(t('toast.no_sleep')); return; }
   $('fs-entry-id').value  = ongoing.id;
@@ -396,9 +399,21 @@ function renderSleepBarChart(entries) {
 
 // ── Wachstum (Growth) ─────────────────────────────────────────────────────────
 
+// Simple in-memory cache for health entries — invalidated on add/delete
+let _healthCache = null;   // { childId, entries }
+
+async function getHealthEntries() {
+  if (_healthCache && _healthCache.childId === activeChild?.id) return _healthCache.entries;
+  const entries = await getEntriesByChild(STORES.HEALTH, activeChild.id);
+  _healthCache = { childId: activeChild.id, entries };
+  return entries;
+}
+
+function invalidateHealthCache() { _healthCache = null; }
+
 async function updateGrowthView(type = 'weight') {
   if (!activeChild) return;
-  const entries = await getEntriesByChild(STORES.HEALTH, activeChild.id);
+  const entries = await getHealthEntries();
 
   const percentile = renderGrowthSVG($('growth-svg'), type, entries, activeChild.birthday, activeChild.gender);
 
@@ -431,9 +446,7 @@ async function renderWachstum() {
 
 // ── Meilensteine ──────────────────────────────────────────────────────────────
 
-async function renderMilestones() {
-  if (!activeChild) { renderNoChild('meilensteine'); return; }
-  const entries = await getEntriesByChild(STORES.MILESTONE, activeChild.id);
+async function renderMilestonesWithEntries(entries) {
   const done = new Set(entries.map(e => e.label));
   const listEl = $('milestone-list');
   if (!listEl) return;
@@ -446,26 +459,40 @@ async function renderMilestones() {
     </label>`).join('');
 }
 
+async function renderMilestones() {
+  if (!activeChild) { renderNoChild('meilensteine'); return; }
+  const entries = await getEntriesByChild(STORES.MILESTONE, activeChild.id);
+  await renderMilestonesWithEntries(entries);
+}
+
 window.toggleMilestone = async function(label, checked) {
   if (!activeChild) return;
+  // Single DB read: load once, write, then re-render (renderMilestones will reload)
   const entries = await getEntriesByChild(STORES.MILESTONE, activeChild.id);
   const existing = entries.find(e => e.label === label);
   if (checked && !existing) {
     const entry = await addEntry(STORES.MILESTONE, { childId: activeChild.id, ts: Date.now(), label }, DEVICE_ID);
     await fbWriteEntry(STORES.MILESTONE, entry);
+    // Optimistic render with updated entries to skip second DB read
+    await renderMilestonesWithEntries([...entries, entry]);
   } else if (!checked && existing) {
     const _mPath = fbPath(STORES.MILESTONE, existing.id).replace('/' + existing.id, '');
     await softDelete(STORES.MILESTONE, existing.id, _mPath, DEVICE_ID);
+    await renderMilestonesWithEntries(entries.filter(e => e.id !== existing.id));
   }
-  await renderMilestones();
 };
 
 // ── Gesundheit ────────────────────────────────────────────────────────────────
 
 async function renderGesundheit() {
   if (!activeChild) { renderNoChild('gesundheit'); return; }
-  const entries = await getEntriesByChild(STORES.HEALTH, activeChild.id);
-  const appts   = await getEntriesByChild(STORES.APPT,   activeChild.id);
+  // Health: use cache (shared with growth chart)
+  // Appts: range 365 days back + future (appts are few, typically future dates)
+  const _apptFrom = Date.now() - 365 * 24 * 60 * 60 * 1000;
+  const [entries, appts] = await Promise.all([
+    getHealthEntries(),
+    getEntriesByChildRange(STORES.APPT, activeChild.id, _apptFrom, Date.now() + 365 * 24 * 60 * 60 * 1000),
+  ]);
 
   const weightEl = $('health-weight-list');
   const heightEl = $('health-height-list');
@@ -497,6 +524,7 @@ async function renderGesundheit() {
 
 window.addHealthEntry = async function(type, value, ts = Date.now()) {
   if (!activeChild || isNaN(value) || value <= 0) return;
+  invalidateHealthCache();
   const entry = await addEntry(STORES.HEALTH, { childId: activeChild.id, ts, type, value }, DEVICE_ID);
   await fbWriteEntry(STORES.HEALTH, entry);
   showToast(t('toast.health_saved'));
