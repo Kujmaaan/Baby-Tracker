@@ -122,6 +122,25 @@ const TRANSLATIONS = {
     'health.appts.empty':            'Keine Arzttermine.',
     'home.today.empty':              'Noch keine Einträge heute.',
 
+    // Age string units
+    'age.years':                     'J',
+    'age.months':                    'M',
+    'age.days':                      'T',
+
+    // Duration units (long form)
+    'dur.hours':                     'Std',
+    'dur.minutes':                   'Min',
+
+    // CSV export headers + row values
+    'csv.col.type':                  'Typ',
+    'csv.col.date':                  'Datum',
+    'csv.col.time':                  'Uhrzeit',
+    'csv.col.end':                   'Ende',
+    'csv.col.details':               'Dauer/Details',
+    'csv.val.sleep':                 'Schlaf',
+    'csv.val.feed':                  'Fütterung',
+    'csv.val.diaper':                'Windel',
+
     // Tagesplan page
     'page.tagesplan.title':          'Tagesplan',
     'tagesplan.placeholder':         'Aktivität',
@@ -378,6 +397,25 @@ const TRANSLATIONS = {
     'health.height.empty':           'No height recorded yet.',
     'health.appts.empty':            'No appointments.',
     'home.today.empty':              'No entries today.',
+
+    // Age string units
+    'age.years':                     'y',
+    'age.months':                    'mo',
+    'age.days':                      'd',
+
+    // Duration units (long form)
+    'dur.hours':                     'h',
+    'dur.minutes':                   'min',
+
+    // CSV export headers + row values
+    'csv.col.type':                  'Type',
+    'csv.col.date':                  'Date',
+    'csv.col.time':                  'Time',
+    'csv.col.end':                   'End',
+    'csv.col.details':               'Duration/Details',
+    'csv.val.sleep':                 'Sleep',
+    'csv.val.feed':                  'Feeding',
+    'csv.val.diaper':                'Diaper',
 
     // Tagesplan page
     'page.tagesplan.title':          'Daily Plan',

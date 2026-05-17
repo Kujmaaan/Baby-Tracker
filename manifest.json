@@ -1,7 +1,7 @@
 {
   "name": "Baby Tracker",
-  "short_name": "BabyTracker",
-  "description": "Schlaf, Mahlzeiten & Wachstum im Blick — jederzeit, auch offline.",
+  "short_name": "Baby Tracker",
+  "description": "Track sleep, feedings, diapers & growth — offline-first baby tracker.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,7 +9,10 @@
   "theme_color": "#8b5cf6",
   "orientation": "portrait-primary",
   "lang": "de",
-  "categories": ["health", "lifestyle"],
+  "categories": [
+    "health",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
@@ -38,11 +41,16 @@
   ],
   "shortcuts": [
     {
-      "name": "Schlaf starten",
-      "short_name": "Schlafen",
-      "description": "Schlaf-Tracking starten",
+      "name": "Sleep Tracking",
+      "short_name": "Sleep",
+      "description": "Start or stop sleep tracking",
       "url": "./?action=sleep",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

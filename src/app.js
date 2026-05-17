@@ -819,10 +819,10 @@ window.exportCSV = async function() {
   const diaper = await getEntriesByChild(STORES.DIAPER, activeChild.id);
 
   const rows = [
-    ['Typ','Datum','Uhrzeit','Ende','Dauer/Details'],
-    ...sleep.map(e  => ['Schlaf', fmtDate(e.ts), fmtTime(e.ts), fmtTime(e.end), fmtDur(sleepDuration(e))]),
-    ...feed.map(e   => ['Fütterung', fmtDate(e.ts), fmtTime(e.ts), '', e.amount ? e.amount + ' ml' : e.type]),
-    ...diaper.map(e => ['Windel', fmtDate(e.ts), fmtTime(e.ts), '', e.kind || '']),
+    [t('csv.col.type'), t('csv.col.date'), t('csv.col.time'), t('csv.col.end'), t('csv.col.details')],
+    ...sleep.map(e  => [t('csv.val.sleep'),  fmtDate(e.ts), fmtTime(e.ts), fmtTime(e.end), fmtDur(sleepDuration(e))]),
+    ...feed.map(e   => [t('csv.val.feed'),   fmtDate(e.ts), fmtTime(e.ts), '', e.amount ? e.amount + ' ml' : e.type]),
+    ...diaper.map(e => [t('csv.val.diaper'), fmtDate(e.ts), fmtTime(e.ts), '', e.kind || '']),
   ];
 
   // csvCell() prevents CSV formula injection (= + - @ prefix)
