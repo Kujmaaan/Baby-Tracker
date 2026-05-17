@@ -117,6 +117,10 @@ const TRANSLATIONS = {
     'health.section.appts':          '🏥 Arzttermine',
     'health.appt.placeholder.title': 'Termin (z.B. U5)',
     'health.appt.btn.add':           'Hinzufügen',
+    'health.weight.empty':           'Noch kein Gewicht eingetragen.',
+    'health.height.empty':           'Noch keine Größe eingetragen.',
+    'health.appts.empty':            'Keine Arzttermine.',
+    'home.today.empty':              'Noch keine Einträge heute.',
 
     // Tagesplan page
     'page.tagesplan.title':          'Tagesplan',
@@ -370,6 +374,10 @@ const TRANSLATIONS = {
     'health.section.appts':          '🏥 Appointments',
     'health.appt.placeholder.title': 'Appointment (e.g. 6-month check)',
     'health.appt.btn.add':           'Add',
+    'health.weight.empty':           'No weight recorded yet.',
+    'health.height.empty':           'No height recorded yet.',
+    'health.appts.empty':            'No appointments.',
+    'home.today.empty':              'No entries today.',
 
     // Tagesplan page
     'page.tagesplan.title':          'Daily Plan',

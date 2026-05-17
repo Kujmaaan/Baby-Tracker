@@ -475,13 +475,13 @@ async function renderGesundheit() {
     const ws = entries.filter(e => e.type === 'weight').slice(0, 5);
     weightEl.innerHTML = ws.length
       ? ws.map(e => `<div class="log-item"><span>⚖️</span><span>${fmtDate(e.ts)} · ${fmtWeight(e.value)}</span></div>`).join('')
-      : '<p class="empty-state">Noch kein Gewicht eingetragen.</p>';
+      : `<p class="empty-state">${t('health.weight.empty')}</p>`;
   }
   if (heightEl) {
     const hs = entries.filter(e => e.type === 'height').slice(0, 5);
     heightEl.innerHTML = hs.length
       ? hs.map(e => `<div class="log-item"><span>📏</span><span>${fmtDate(e.ts)} · ${fmtHeight(e.value)}</span></div>`).join('')
-      : '<p class="empty-state">Noch keine Größe eingetragen.</p>';
+      : `<p class="empty-state">${t('health.height.empty')}</p>`;
   }
   if (apptEl) {
     apptEl.innerHTML = appts.length
@@ -491,7 +491,7 @@ async function renderGesundheit() {
           <small>${fmtDate(a.ts)} ${fmtTime(a.ts)}</small></div>
           <button class="icon-btn danger" onclick="deleteAppt(${JSON.stringify(a.id)})">🗑️</button>
         </div>`).join('')
-      : '<p class="empty-state">Keine Arzttermine.</p>';
+      : `<p class="empty-state">${t('health.appts.empty')}</p>`;
   }
 }
 
@@ -1023,7 +1023,7 @@ async function renderTrackerRecent() {
         ? `<div class="log-item"><span class="log-icon">🍼</span><span>${fmtTime(e.ts)} · ${esc(e.type)}${e.amount ? ' · ' + e.amount + ' ml' : ''}</span></div>`
         : `<div class="log-item"><span class="log-icon">🧷</span><span>${fmtTime(e.ts)} · ${esc(e.kind)}</span></div>`
       ).join('')
-    : '<p class="empty-state">Noch keine Einträge heute.</p>';
+    : `<p class="empty-state">${t('home.today.empty')}</p>`;
 }
 
 // Patch renderTracker to also fill recent list
