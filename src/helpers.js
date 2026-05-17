@@ -1,5 +1,3 @@
-import { getLanguage } from './i18n.js';
-
 // ─── helpers.js — Pure utility functions (no side-effects, no imports) ────────
 // All date math is DST-safe: we never add 86_400_000 ms blindly.
 
@@ -36,7 +34,7 @@ export function fmtDurLong(ms) {
   const totalMin = Math.round(ms / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  const lang2 = getLanguage();
+  const lang2 = (typeof document !== 'undefined' ? document.documentElement.lang : 'de');
   const H = lang2 === 'en' ? 'h'   : 'Std';
   const M = lang2 === 'en' ? 'min' : 'Min';
   if (h === 0) return `${m} ${M}`;
@@ -117,7 +115,7 @@ export function ageExact(iso) {
     days += prev.getDate();
   }
   if (months < 0) { years--; months += 12; }
-  const lang = getLanguage();
+  const lang = (typeof document !== 'undefined' ? document.documentElement.lang : 'de');
   const Y = lang === 'en' ? 'y'  : 'J';
   const Mo = lang === 'en' ? 'mo' : 'M';
   const D = lang === 'en' ? 'd'  : 'T';
