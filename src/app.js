@@ -49,6 +49,8 @@ import {
   initReminders,
 } from './notif.js';
 import { t, setLanguage, getLanguage, applyI18n } from './i18n.js';
+import { safeBoot, clearBootFailures, checkIndexedDB } from './recovery.js';
+import { initAppCheck } from './appcheck.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let cfg          = null;
@@ -63,12 +65,9 @@ const $ = id => document.getElementById(id);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  try {
+  await safeBoot(async () => {
     await boot();
-  } catch (err) {
-    console.error('[App] Boot error:', err);
-    showToast(t('toast.start_error'), 'error');
-  }
+  });
 });
 
 async function boot() {
@@ -89,6 +88,7 @@ async function boot() {
   // 4. Firebase (non-blocking)
   showFbLoading();
   initFB().then(ok => {
+    if (ok) initAppCheck().catch(console.warn);
     hideFbLoading();
     if (ok) {
       getFamilyId().then(fid => {
@@ -722,9 +722,11 @@ window.backupJSON = async function() {
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
+  const _backupUrl = URL.createObjectURL(blob);
+  a.href     = _backupUrl;
   a.download = `baby-tracker-backup-${toLocalDateStr(new Date())}.json`;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(_backupUrl), 60_000);
   showToast(t('toast.backup_created'));
 };
 
@@ -857,9 +859,11 @@ window.exportCSV = async function() {
   const csv  = rows.map(r => r.map(c => csvCell(c)).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
+  const _csvUrl = URL.createObjectURL(blob);
+  a.href     = _csvUrl;
   a.download = `baby-tracker-${safeFilename(activeChild.name)}-${toLocalDateStr(new Date())}.csv`;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(_csvUrl), 60_000);
   showToast(t('toast.csv_exported'));
 };
 

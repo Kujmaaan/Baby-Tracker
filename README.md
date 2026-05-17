@@ -1,102 +1,127 @@
-# Baby Tracker v3.0
+# Baby Tracker v3.1
 
-A production-grade Progressive Web App for tracking infant sleep, feeding, diapers, growth, and health — built entirely in vanilla ES Modules with Firebase Realtime Database sync, full offline support, and multi-device conflict resolution.
+A production-quality offline-first PWA for tracking infant sleep, feeding, diapers, growth, milestones, and health — no app store required.
 
-**Live:** https://kujmaaan.github.io/Baby-Tracker/
+**Live**: https://kujmaaan.github.io/Baby-Tracker/
+**Stack**: Vanilla ES Modules · IndexedDB · Firebase RTDB · Service Worker · No build step
 
 ---
 
 ## Features
 
-| Area | What it does |
-|---|---|
-| **Sleep** | Start/stop, midnight-split, DST-safe, overlap detection, overlap guard |
-| **Feeding** | Breast (L/R), bottle, solid — duration + amount logging |
-| **Diapers** | Wet/dirty/both, notes |
-| **Growth** | Weight + length, WHO percentile curve (SVG) |
-| **Health** | Doctor appointments, medication reminders |
-| **Milestones** | Preset + custom, date tracking |
-| **Stats** | 7-day sleep bar chart, daily summaries, lazy-rendered charts |
-| **Verlauf** | Paginated history (50/page), per-store filter |
-| **Multi-child** | Unlimited children, instant switching, per-child data isolation |
-| **Backup/Restore** | Export JSON, preview diff before import, merge or overwrite mode, auto-snapshot + rollback |
-| **Sync** | Firebase Realtime DB, anonymous auth, family-ID isolation, offline queue with exponential backoff |
-| **Conflict resolution** | last-write-wins, tombstone-wins, stale-write detection, sync loop guard |
-| **Soft delete** | 30-day tombstone TTL, undo toast, cross-device resurrection via Firebase |
-| **Debug panel** | Hidden (5-tap or `?debug=1`) — queue inspector, IDB diagnostics, conflict log, export |
-| **PWA** | Installable, SW v21, offline-first, iOS safe areas, update banner |
+- 🌙 **Sleep tracking** — start/stop, correction, duration display
+- 🍼 **Feeding** — breast, bottle, solids + amount (ml)
+- 🧷 **Diapers** — wet, dirty, both, dry
+- 📊 **Statistics** — 7-day sleep bar chart, weekly summaries
+- 📈 **Growth charts** — WHO percentile curves (weight, height, head circumference)
+- 🏆 **Milestones** — preset developmental milestones with date tracking
+- 🏥 **Health records** — weight/height/head measurements + doctor appointments
+- 📝 **Tagesplan** — daily schedule entries
+- 🔔 **Push Notifications** — feeding reminders, sleep-too-long warnings
+- 📦 **Backup/Restore** — JSON export/import
+- 📥 **CSV export** — all entries, language-aware column headers
+- 🌍 **i18n** — German (default) + English, switchable in Settings
+- 🎨 **Dark/Light mode**
+- 👶 **Multi-child support**
+- 📴 **Fully offline** — works without internet after first load
 
 ---
 
 ## Architecture
 
-```
-src/
-  constants.js    — DEVICE_ID, WHO_DATA, PRESET_MILESTONES, ICONS
-  helpers.js      — Date math (DST-safe), formatting, uid()
-  storage.js      — IndexedDB v3, 9 stores, versioned migrations
-  firebase.js     — Anonymous auth, fbWrite/fbDelete, sync queue, conflict resolution
-  sleep.js        — validateSleepEntry, crossesMidnight, splitSleepAcrossDays, activeSleepGuard
-  config.js       — Children, settings, theme, familyId
-  security.js     — sanitize, esc, csvCell, validateImport, MAX_LENGTHS
-  migrations.js   — IDB schema upgrades (v1→v2→v3)
-  perf.js         — getDailySummaries, batchRender, lazyRenderChart, addTrackedListener
-  restore.js      — takeSnapshot, previewRestore, safeRestore, rollbackToSnapshot
-  tombstone.js    — softDelete, getActiveEntries, purgeTombstones, restoreDeleted
-  conflict.js     — resolveConflict, logConflict, getSyncDiagnostics, isSyncLoop
-  debug.js        — openDebugPanel, attachDebugTrigger, collectAll, perfStart/perfEnd
-  app.js          — UI controller, event wiring, page rendering (~1210 lines)
-```
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a full technical overview.
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for a full module dependency graph.
+```
+Vanilla ES Modules → IndexedDB (local) → Firebase RTDB (optional cloud sync)
+                  ↑ Service Worker (offline cache, background updates)
+```
 
 ---
 
-## Getting Started
+## Setup
 
-### Run locally
-```bash
-npm install          # installs Playwright for E2E tests
-npx serve . -p 5000  # serves at http://localhost:5000
-```
+### GitHub Pages (no server needed)
 
-### Run tests
-```bash
-npm test             # unit tests (Node) + E2E (Playwright, Chromium)
-npm run test:unit    # sleep.test.js only
-npm run test:e2e     # Playwright all browsers
-npm run test:e2e:ui  # Playwright UI mode
-```
+1. Fork this repository
+2. Enable GitHub Pages (Settings → Pages → Deploy from `main`)
+3. Visit `https://your-username.github.io/Baby-Tracker/`
 
-### Deploy
-Static site — push to `main` and GitHub Pages auto-deploys via Actions.
+### Firebase Sync (optional)
+
+1. Create a Firebase project at https://console.firebase.google.com
+2. Enable Realtime Database (EU region recommended)
+3. Enable Anonymous Authentication
+4. Deploy Security Rules from `data/firebase-rules.json`
+5. Update `FB_CONFIG` in `src/firebase.js` with your project credentials
+
+### Firebase App Check (optional, recommended)
+
+See [docs/APP_CHECK_SETUP.md](docs/APP_CHECK_SETUP.md).
 
 ---
 
-## Firebase Setup
+## Offline Behaviour
 
-1. Create a Firebase project with Realtime Database enabled
-2. Copy your config into `src/firebase.js` (`firebaseConfig`)
-3. Deploy Security Rules from `data/firebase-rules.json`:
-   - Firebase Console → Realtime Database → Rules → paste → Publish
-4. Enable Anonymous Authentication (Authentication → Sign-in method)
+- All data is stored locally in IndexedDB first
+- Service Worker (v30) caches the entire app shell (24 files)
+- Writes are queued when offline and synced automatically on reconnect
+- The app works fully offline after the first load
 
-See [SECURITY.md](docs/SECURITY.md) for the full rule rationale.
+---
+
+## i18n
+
+Language is switched via Settings → 🌍 Sprache.
+Adding a new language: extend the `TRANSLATIONS` object in `src/i18n.js`.
+
+---
+
+## Backup & Restore
+
+Settings → 📦 Backup exports a JSON file with all entries.
+Settings → ♻️ Wiederherstellen imports a backup JSON.
+CSV export includes all sleep/feed/diaper entries in the active language.
 
 ---
 
 ## Debug Panel
 
-Access via:
-- **5-tap** on the version text in Settings
-- **URL:** `?debug=1`
-- **localStorage:** `bt_debug_mode = '1'`
+Access via 5× tap on the version text in Settings (or `?debug=1` URL param).
 
-Shows: IDB store sizes, sync queue, sync diagnostics, tombstones, conflict log, SW caches, performance timings, memory usage.
+Panels: Queue Inspector · IDB Health · SW Errors · Boot Failures · Quarantine · Sync Diagnostics · Conflict Log · Performance Timings · Memory
 
 ---
 
-## Browser Support
+## Recovery
 
-Chrome 90+, Firefox 88+, Safari 14+ (iOS), Edge 90+.
-Requires: ES2020, IndexedDB, Service Workers, CSS Custom Properties.
+See [RECOVERY.md](RECOVERY.md) for troubleshooting blank screens, stuck SWs, corrupt IDB, and lost sync.
+
+---
+
+## Privacy
+
+All data stays on your device by default. Firebase sync is opt-in.
+See [PRIVACY.md](PRIVACY.md) for full details.
+
+---
+
+## Known Limitations
+
+See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
+
+---
+
+## Testing
+
+```bash
+node --experimental-vm-modules src/sleep.test.js
+# Results: 31/31 passed ✓
+```
+
+E2E tests: Playwright + GitHub Actions CI (`.github/workflows/`).
+
+---
+
+## License
+
+MIT

@@ -9,6 +9,9 @@
 //         Conflict Log · Export Debug Report
 
 import { getPendingQueue, getAllEntries, openDB, STORES } from './storage.js';
+import { checkIndexedDB, checkSWHealth, repairQueue, getQuarantinedItems,
+         getSWErrors, getBootFailures, getLastIDBHealth } from './recovery.js';
+import { initAppCheck, isAppCheckReady } from './appcheck.js';
 import { getSyncDiagnostics, getConflictLog, clearConflictLog } from './conflict.js';
 import { getTombstoneStats } from './tombstone.js';
 import { checkIntegrity, CURRENT_DB_VERSION } from './migrations.js';
@@ -108,6 +111,12 @@ async function collectAll() {
     } : null,
     userAgent:   navigator.userAgent,
     online:      navigator.onLine,
+    // Recovery / health data
+    idbHealth:   getLastIDBHealth(),
+    swErrors:    getSWErrors().slice(-5),
+    bootFails:   getBootFailures().slice(-3),
+    quarantine:  getQuarantinedItems().slice(-10),
+    appCheck:    isAppCheckReady(),
     memory:      performance.memory ? {
       used:  `${(performance.memory.usedJSHeapSize / 1_048_576).toFixed(1)}MB`,
       total: `${(performance.memory.totalJSHeapSize / 1_048_576).toFixed(1)}MB`,
@@ -151,6 +160,9 @@ export async function openDebugPanel() {
         <button onclick="window._debugExport()" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.8rem">📥 Report exportieren</button>
         <button onclick="window._debugClearConflicts()" style="background:#d97706;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.8rem">🗑️ Konflikt-Log leeren</button>
         <button onclick="window._debugRefresh()" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.8rem">🔄 Aktualisieren</button>
+        <button onclick="window._debugRepairQueue()" style="background:#0891b2;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.8rem">🔧 Queue reparieren</button>
+        <button onclick="window._debugCheckIDB()" style="background:#0f766e;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.8rem">🏥 IDB prüfen</button>
+        <button onclick="window._debugCheckSW()" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.8rem">⚙️ SW prüfen</button>
       </div>
 
       ${section('🏥 System', `Online: ${data.online} | Firebase: ${data.firebase.ready} | UID: ${data.firebase.uid || '—'}\nDB-Version: ${data.dbVersion} | Integrity: ${data.integrityIssues.length === 0 ? '✅ OK' : '❌ ' + data.integrityIssues.join(', ')}`)}
@@ -163,6 +175,11 @@ export async function openDebugPanel() {
       ${section('⏱️ Performance Timings', `Nav: ${fmt(data.navTiming)}\nApp: ${fmt(data.timings)}`)}
       ${section('🧠 Memory', data.memory ? fmt(data.memory) : 'Nicht verfügbar (nur Chrome)')}
       ${section('🌐 User Agent', data.userAgent)}
+      ${section('🛡️ App Check', `Active: ${data.appCheck}`)}
+      ${section('🏥 IDB Health', data.idbHealth ? fmt(data.idbHealth) : 'Noch nicht geprüft')}
+      ${section('⚙️ SW Errors (letzte 5)', data.swErrors.length ? fmt(data.swErrors) : '✅ Keine')}
+      ${section('🔁 Boot Failures', data.bootFails.length ? fmt(data.bootFails) : '✅ Keine')}
+      ${section('🚧 Quarantäne Queue', data.quarantine.length ? fmt(data.quarantine) : '✅ Leer')}
     </div>`;
 
   document.body.appendChild(panel);
@@ -172,7 +189,7 @@ export async function openDebugPanel() {
     const full = await collectAll();
     const blob = new Blob([JSON.stringify(full, null, 2)], { type: 'application/json' });
     const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(blob),
+      href: (() => { const u = URL.createObjectURL(blob); setTimeout(() => URL.revokeObjectURL(u), 60_000); return u; })(),
       download: `bt-debug-${Date.now()}.json`,
     });
     a.click();
@@ -185,6 +202,21 @@ export async function openDebugPanel() {
   window._debugRefresh = () => {
     panel.remove();
     openDebugPanel();
+  };
+  window._debugRepairQueue = async () => {
+    const result = await repairQueue();
+    alert(`Queue repariert: ${result.healthy} ok, ${result.quarantined} quarantiniert`);
+    panel.remove(); openDebugPanel();
+  };
+  window._debugCheckIDB = async () => {
+    const result = await checkIndexedDB();
+    alert(`IDB: ${result.ok ? '✅ OK' : '❌ ' + result.error}`);
+    panel.remove(); openDebugPanel();
+  };
+  window._debugCheckSW = async () => {
+    const result = await checkSWHealth();
+    alert(`SW: ${result.registered ? '✅ registriert' : '❌ nicht registriert'} | State: ${result.state || result.error}`);
+    panel.remove(); openDebugPanel();
   };
 }
 

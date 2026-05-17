@@ -1,175 +1,136 @@
-# Final Production Audit — Baby Tracker v3.0
+# Final Technical Audit — Baby Tracker v3.1
 
-**Date:** 2026-05-14  
-**Auditor:** Automated (Claude)  
-**Scope:** All phases 1–8 of the production hardening initiative
+*Audit date: May 2026 | SW: v30 | DB schema: v7 | Tests: 31/31 ✓*
 
 ---
 
-## Executive Summary
+## Memory Leaks
 
-Baby Tracker v3.0 is **production-ready**. All 8 planned phases are complete and committed to `main`. The application is a fully offline-capable PWA with Firebase sync, conflict resolution, soft-delete, professional documentation, and a hidden debug panel.
+| Item | Status | Notes |
+|------|--------|-------|
+| `URL.createObjectURL` (backup, CSV, debug export) | ✅ Fixed | `revokeObjectURL` called after 60 s |
+| `setInterval` in `notif.js` | ✅ OK | Properly cleared via `stopFeedReminder()` / `stopSleepWarning()` |
+| `setInterval` in `debug.js` | ✅ OK | Properly cleared via `stopQuarantineMonitor()` |
+| DOM event listeners in modals | ✅ OK | `onclick` attributes in HTML — GC'd with element |
+| Firebase RTDB listeners (`_listeners` map) | ✅ OK | Tracked + cleaned up via `fbUnlistenAll()` |
+| Health entry cache (`_healthCache`) | ✅ OK | Invalidated on write; holds at most one child's entries |
 
-**Overall Status: ✅ PASS**
+## Event Listener Leaks
 
----
+| Item | Status |
+|------|--------|
+| `online` / `offline` listeners on `window` | ✅ Added once at boot, never removed (intentional) |
+| SW `updatefound` listener | ✅ Added per-registration (correct) |
+| SW `message` listener on `navigator.serviceWorker` | ⚠️ Added twice (boot + second DOMContentLoaded). Harmless duplicate but worth cleaning up in future |
+| `visibilitychange` listener | ✅ Added once |
 
-## Audit Results by Area
+**Minor**: the duplicate SW message listener (two `DOMContentLoaded` handlers) should be consolidated in a future cleanup. No functional impact.
 
-### 1. Unit Tests
+## Race Conditions
 
-| Check | Result |
-|---|---|
-| `src/sleep.test.js` runs without error | ✅ |
-| All 31 tests pass | ✅ `31/31 passed ✓` |
-| TEST_CASES (7 sleep scenarios) | ✅ |
-| splitSleepAcrossDays (4 cases) | ✅ |
-| activeSleepGuard (3 cases) | ✅ |
-| detectSleepOverlaps (3 cases) | ✅ |
-| validateSleepEntry edge cases (5 boundary tests) | ✅ |
+| Scenario | Status | Mitigation |
+|----------|--------|-----------|
+| Double sleep start | ✅ Fixed | `activeSleepGuard()` checks for open session before writing |
+| Sync while offline write pending | ✅ OK | Queue is drained sequentially with `_syncing` flag |
+| Firebase auth race (write before auth ready) | ✅ OK | `enqueueSync()` stores writes; `syncUp()` only runs after `fbReady` |
+| Child switch during async render | ⚠️ Low risk | `activeChild` checked at start of each render; mid-render switch may show stale data for one frame |
 
-### 2. Module Exports
+## Service Worker Cache Risks
 
-| Module | Exports Verified |
-|---|---|
-| `debug.js` | ✅ `openDebugPanel`, `attachDebugTrigger`, `isDebugMode` |
-| `restore.js` | ✅ `takeSnapshot`, `previewRestore`, `safeRestore`, `rollbackToSnapshot`, `getSnapshot`, `clearSnapshot` |
-| `tombstone.js` | ✅ `softDelete`, `filterDeleted`, `getActiveEntries`, `getRecentlyDeleted`, `purgeTombstones` |
-| `conflict.js` | ✅ `resolveConflict`, `logConflict`, `isSyncLoop`, `showConflictNotification`, `newOperationId`, `incrementSyncRevision` |
+| Risk | Status | Mitigation |
+|------|--------|-----------|
+| Stale assets after deploy | ✅ OK | Cache name bumped on every deploy (v29→v30) |
+| Corrupted cached response | ⚠️ Low risk | No integrity check on cached files; use Debug Panel → SW check |
+| Cache grows unboundedly | ✅ OK | Old caches deleted in SW `activate` event |
+| `i18n.js` / `recovery.js` in APP_SHELL | ✅ OK | Added in v29/v30 |
 
-**20/20 exports verified ✅**
+## Offline Behaviour
 
-### 3. Service Worker
+| Scenario | Status |
+|----------|--------|
+| Write while offline | ✅ Queued → synced on reconnect |
+| Read while offline | ✅ Served from IndexedDB (local-first) |
+| App load while offline | ✅ SW serves APP_SHELL from cache |
+| SW not yet installed (first load, offline) | ❌ App requires network on very first load |
+| Queue replay order | ✅ FIFO by `createdAt` timestamp |
 
-| Check | Result |
-|---|---|
-| SW version | ✅ `v21` |
-| APP_SHELL files all exist on disk | ✅ `18/18` |
-| New modules in cache: restore, tombstone, conflict, debug | ✅ |
-| SKIP_WAITING message handler present | ✅ |
-| Update banner wired in app.js | ✅ |
+## Multi-Tab Behaviour
 
-### 4. Security
+| Scenario | Status |
+|----------|--------|
+| Two tabs open, both write | ⚠️ Both write to local IDB independently; sync merges by LWW |
+| One tab updates SW, other stays on old | ✅ Old tab keeps working; update banner shown |
+| IndexedDB transactions across tabs | ✅ IDB handles concurrency natively |
 
-| Check | Result |
-|---|---|
-| No raw innerHTML with user-data | ✅ All dynamic content uses `esc()` or `sanitize()` |
-| Firebase rules deployed (familyId isolation) | ✅ User-confirmed |
-| `validateImport()` guards backup imports | ✅ |
-| `safeFilename()` guards export filenames | ✅ |
-| Max field lengths enforced via `MAX_LENGTHS` | ✅ |
-| Sync loop guard (`isSyncLoop` 60s dedup) | ✅ |
+## Long-Term IndexedDB Growth
 
-### 5. Offline / Sync
+| Store | Growth rate | Risk |
+|-------|------------|------|
+| sleep | ~2–3/day | Low — ~1 KB/entry |
+| feed | ~5–8/day | Low |
+| diaper | ~6–10/day | Low |
+| health | ~1–2/week | None |
+| milestone | ~20 total | None |
+| appointment | ~1–2/month | None |
+| tagesplan | ~3–5/day | Low |
+| sync_queue | Transient | ✅ Drained on sync |
+| tombstones | Bounded | ✅ Purged after 30 days |
 
-| Check | Result |
-|---|---|
-| Offline queue with exponential backoff | ✅ |
-| Quarantine after 5 retries | ✅ |
-| Conflict resolution: tombstone-wins > stale-discard > LWW | ✅ |
-| Soft delete propagates via Firebase tombstone writes | ✅ |
-| 30-day tombstone GC (`purgeTombstones`) | ✅ |
-| `syncRevision` stamped on all writes | ✅ |
-| Online/offline body class for CSS indicator | ✅ |
+**Estimate**: 3 years of use ≈ 15–25 MB. Well within browser quotas.
+No automatic pruning needed for personal use.
 
-### 6. PWA / Performance
+## iOS Safari Specifics
 
-| Check | Result |
-|---|---|
-| `manifest.json` present | ✅ |
-| Icons 192×192 + 512×512 | ✅ |
-| `viewport-fit=cover` + apple-mobile-web-app-capable | ✅ |
-| iOS safe-area-inset padding in CSS | ✅ |
-| Skeleton loading animations | ✅ |
-| `batchRender()` / `lazyRenderChart()` for perf | ✅ |
-| `getDailySummaries()` replaces 3 full-table scans | ✅ |
-| Paginated Verlauf (50 items/page) | ✅ |
-| Memory-safe listeners (`addTrackedListener` + `cleanupAllListeners`) | ✅ |
-| CLS prevention (`contain: layout` on chart containers) | ✅ |
+| Item | Status |
+|------|--------|
+| Push Notifications | ❌ Requires iOS 16.4+; silent fail on older versions |
+| PWA storage persistence | ✅ Add to Home Screen = persistent storage |
+| Storage eviction | ⚠️ Safari may evict non-PWA data under storage pressure |
+| `performance.memory` | ❌ Not available (debug panel shows N/A) |
+| IDBKeyRange compound indexes | ✅ Supported since iOS 13 |
 
-### 7. Debug Panel
+## Android Chrome Specifics
 
-| Check | Result |
-|---|---|
-| `src/debug.js` created (206 lines) | ✅ |
-| 5-tap trigger on version element | ✅ |
-| `?debug=1` URL trigger | ✅ |
-| `[DEBUG]` badge in debug mode | ✅ |
-| `collectAll()` aggregates all diagnostics | ✅ |
-| Export JSON from debug panel | ✅ |
-| Added to SW APP_SHELL + modulepreload | ✅ |
+| Item | Status |
+|------|--------|
+| Push Notifications | ✅ Full support |
+| PWA install | ✅ Full support |
+| Background sync | ⚠️ Not implemented (native Background Sync API not used) |
+| Storage quota | ✅ Generous (50%+ of free disk) |
 
-### 8. Documentation
+## Security Audit
 
-| File | Status |
-|---|---|
-| `README.md` | ✅ Feature table, architecture, quick-start, Firebase setup |
-| `docs/ARCHITECTURE.md` | ✅ Module graph, IDB schema, data flows |
-| `docs/MIGRATIONS.md` | ✅ Version history, migration guide |
-| `docs/SECURITY.md` | ✅ Firebase rules, sanitization, threat model |
-| `docs/SYNC_ENGINE.md` | ✅ Queue schema, conflict algorithm, soft-delete protocol |
-| `docs/BACKUP_RESTORE.md` | ✅ Export format, import flow, rollback |
-| `docs/TESTING.md` | ✅ Unit + E2E, Playwright matrix, CI setup |
+| Item | Status |
+|------|--------|
+| CSP | ✅ Strict; `script-src` uses SRI hashes |
+| SRI on CDN scripts | ✅ All Firebase SDK scripts pinned |
+| Input sanitisation | ✅ `escHtml()`, `csvCell()`, `clampStr()`, `validateImport()` |
+| Firebase Security Rules | ✅ Auth + family membership required for all reads/writes |
+| App Check | ⚠️ Implemented, not activated (requires reCAPTCHA site key) |
+| API key exposure | ✅ Acceptable — Firebase web keys are client identifiers, not secrets |
+| XSS via innerHTML | ✅ All dynamic content uses `esc()` / `escHtml()` before insertion |
 
----
+## Technical Debt
 
-## Known Non-Critical Issues
+| Item | Priority | Effort |
+|------|----------|--------|
+| Duplicate SW message listener | Low | 15 min |
+| Growth chart virtualisation (>500 entries) | Low | 2–4 h |
+| Background Sync API for reliable queue drain | Medium | 4–8 h |
+| Unit tests for i18n, storage, conflict | Medium | 4–6 h |
+| App Check activation | Low | 30 min (user action) |
+| Date localisation (dd.mm.yy always DE style) | Low | 1 h |
 
-| Issue | Severity | Notes |
-|---|---|---|
-| Some imports in `app.js` never called directly (e.g., `saveCfg`, `clearSnapshot`, `filterDeleted`) — imported but only used internally by their own modules or via dynamic `import()` | Low | No runtime impact. Cleanup in next sprint. |
-| CSP header not yet set | Low | Planned for v3.1. Firebase Hosting supports custom headers. |
-| No rate limiting on sync queue (can flood Firebase on reconnect with large backlogs) | Low | Acceptable at current scale. Batch writes planned for v3.1. |
+## Stability Assessment
 
----
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| Core functionality | ✅ 5/5 | Sleep/feed/diaper tracking rock-solid |
+| Offline reliability | ✅ 4/5 | Excellent; first-load requires network |
+| Sync correctness | ✅ 4/5 | LWW correct; simultaneous edits may conflict |
+| Performance | ✅ 4/5 | No full-table scans; growth chart unvirtualized |
+| Recovery | ✅ 4/5 | Boot guard, queue repair, SW check all present |
+| Security | ✅ 4/5 | App Check not yet activated |
+| Browser compatibility | ✅ 4/5 | iOS <16.4 lacks push; otherwise excellent |
 
-## Git History (Phases 1–8)
-
-```
-c9a9d88  Phase 7: Professional Documentation
-0c721ea  Phase 6: Debug Panel + Observability
-aeddc70  Phase 5: Lighthouse Polish (≥95 Performance/PWA/A11y)
-e512c71  Phase 4: Advanced Sync Conflict Resolution
-a47b4ce  Phase 3: Soft Delete / Tombstones (multi-device safe)
-ed10a89  Phase 2: Restore & Backup Hardening
-06a5110  Phase 1: E2E Testsystem mit Playwright + GitHub Actions
-a16705e  wire perf.js, activeSleepGuard, sleep tests 31/31
-741da41  Production Hardening — Security, Migrations, Sync, Sleep, Perf, A11y
-```
-
----
-
-## File Summary
-
-| Module | Lines | Purpose |
-|---|---|---|
-| `src/app.js` | 1221 | UI controller + event wiring |
-| `src/storage.js` | 423 | IndexedDB v3, 9 stores, migrations |
-| `src/sleep.js` | 394 | Sleep logic, validation, DST-safe splitting |
-| `src/firebase.js` | 311 | Auth, sync queue, conflict resolution integration |
-| `src/restore.js` | 289 | Backup/restore with snapshot + rollback |
-| `src/conflict.js` | 276 | Conflict resolution, sync diagnostics |
-| `src/tombstone.js` | 250 | Soft delete, GC, cross-device propagation |
-| `src/helpers.js` | 243 | Date math, formatting, utilities |
-| `src/config.js` | 230 | Children, settings, theme, familyId |
-| `src/sleep.test.js` | 217 | 31 automated unit tests |
-| `src/debug.js` | 206 | Hidden debug panel + observability |
-| `src/security.js` | 173 | Input sanitization, XSS prevention |
-| `src/perf.js` | 162 | Pagination, lazy charts, memory-safe listeners |
-| `src/migrations.js` | 138 | IDB schema versioning |
-| `src/constants.js` | 110 | WHO data, device ID, presets |
-| **Total** | **4643** | **15 modules** |
-
----
-
-## Verdict
-
-**✅ Ready for production deployment.**
-
-All planned phases delivered. Test suite green. Security hardened. Documentation complete. Debug tooling in place for post-launch monitoring.
-
-**Next recommended steps (v3.1):**
-1. Content Security Policy header via Firebase Hosting `firebase.json`
-2. Batch Firebase writes to reduce reconnect flood
-3. Remove genuinely unused imports (low priority)
-4. Run Lighthouse CI in GitHub Actions for regression detection
+**Overall: Production-ready for personal/family use.**

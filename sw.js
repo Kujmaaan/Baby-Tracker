@@ -5,7 +5,7 @@
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v29';
+const CACHE_VER   = 'baby-tracker-v30';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -32,6 +32,8 @@ const APP_SHELL = [
   './src/notif.js',
   './src/debug.js',
   './src/i18n.js',
+  './src/recovery.js',
+  './src/appcheck.js',
 ];
 
 const SKIP_CACHE_PATTERNS = [
