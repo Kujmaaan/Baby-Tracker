@@ -3,3 +3,6 @@
 playwright-report/
 test-results/
 node_modules/
+
+firebase.exe
+database.rules.json
