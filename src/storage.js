@@ -68,12 +68,21 @@ export function openDB() {
         }
       }
 
-      // Run any pending migrations (v2, v3, ...)
-      if (old >= 1) {
-        runMigrations(db, tx, old, nw);
-      } else if (nw > 1) {
-        // Fresh install — run v2+ migrations immediately
-        runMigrations(db, tx, 1, nw);
+      // Run any pending migrations (v2, v3, …).
+      // runMigrations() throws on failure — we catch it here, abort the
+      // transaction (prevents partial schema), and reject the openDB promise
+      // so safeBoot() can show the Recovery UI instead of a broken app.
+      try {
+        if (old >= 1) {
+          runMigrations(db, tx, old, nw);
+        } else if (nw > 1) {
+          // Fresh install — run v2+ migrations immediately
+          runMigrations(db, tx, 1, nw);
+        }
+      } catch (migErr) {
+        console.error('[DB] Migration failed — aborting IDB upgrade:', migErr);
+        try { tx.abort(); } catch { /* ignore if already aborting */ }
+        reject(migErr);
       }
     };
 
@@ -420,4 +429,47 @@ export async function importDB(backup) {
       });
     }
   }
+}
+
+// ── Queue Quarantine (IDB-based) ──────────────────────────────────────────────
+
+/**
+ * Mark a queue item as quarantined in IDB (not hard-deleted).
+ * Preserves the item for debug inspection.
+ * @param {string} qid
+ * @param {string} [reason]
+ */
+export async function quarantineQueueItem(qid, reason = 'manual') {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORES.QUEUE, 'readwrite');
+    const store = tx.objectStore(STORES.QUEUE);
+    const req   = store.get(qid);
+    req.onsuccess = () => {
+      const item = req.result;
+      if (!item) { resolve(); return; }
+      item.status           = 'quarantined';
+      item.quarantinedAt    = Date.now();
+      item.quarantineReason = reason;
+      store.put(item);
+      tx.oncomplete = resolve;
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Get all quarantined queue items (for debug inspection).
+ * @returns {Promise<object[]>}
+ */
+export async function getQuarantinedQueue() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORES.QUEUE, 'readonly');
+    const store = tx.objectStore(STORES.QUEUE);
+    const idx   = store.index('byStatus');
+    const req   = idx.getAll('quarantined');
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror   = () => reject(req.error);
+  });
 }

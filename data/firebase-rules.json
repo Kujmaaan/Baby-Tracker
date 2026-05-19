@@ -2,97 +2,64 @@
   "rules": {
     "families": {
       "$familyId": {
-        ".read":  "auth != null && root.child('members').child(auth.uid).child('familyId').val() == $familyId",
+        ".read": "auth != null && root.child('members').child(auth.uid).child('familyId').val() == $familyId",
         ".write": "auth != null && root.child('members').child(auth.uid).child('familyId').val() == $familyId",
-
         "sleep": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts'])
-              && newData.child('id').isString()
-              && newData.child('childId').isString()
-              && newData.child('ts').isNumber()
-              && newData.child('ts').val() >= 0
-              && newData.child('ts').val() <= now + 60000
-              && (!newData.hasChild('end') || (newData.child('end').isNumber() && newData.child('end').val() > newData.child('ts').val()))
-              && (!newData.hasChild('note') || (newData.child('note').isString() && newData.child('note').val().length <= 500))"
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('ts').isNumber() && newData.child('ts').val() >= 0 && newData.child('ts').val() <= now + 60000 && (!newData.hasChild('end') || (newData.child('end').isNumber() && newData.child('end').val() > newData.child('ts').val())) && (!newData.hasChild('note') || (newData.child('note').isString() && newData.child('note').val().length <= 500))"
           }
         },
-
         "feed": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts'])
-              && newData.child('ts').isNumber()
-              && newData.child('ts').val() >= 0
-              && newData.child('ts').val() <= now + 60000
-              && (!newData.hasChild('amount') || (newData.child('amount').isNumber() && newData.child('amount').val() >= 0 && newData.child('amount').val() <= 2000))"
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('ts').isNumber() && newData.child('ts').val() >= 0 && newData.child('ts').val() <= now + 60000 && (!newData.hasChild('amount') || (newData.child('amount').isNumber() && newData.child('amount').val() >= 0 && newData.child('amount').val() <= 2000))"
           }
         },
-
         "diaper": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts'])
-              && newData.child('ts').isNumber()
-              && newData.child('ts').val() <= now + 60000"
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('ts').isNumber() && newData.child('ts').val() <= now + 60000"
           }
         },
-
         "health": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts','type','value'])
-              && newData.child('ts').isNumber()
-              && newData.child('value').isNumber()
-              && newData.child('value').val() >= 0
-              && newData.child('type').isString()
-              && (newData.child('type').val() == 'weight' || newData.child('type').val() == 'height' || newData.child('type').val() == 'head')"
+            ".validate": "newData.hasChildren(['id','childId','ts','type','value']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('ts').isNumber() && newData.child('value').isNumber() && newData.child('value').val() >= 0 && newData.child('type').isString() && (newData.child('type').val() == 'weight' || newData.child('type').val() == 'height' || newData.child('type').val() == 'head' || newData.child('type').val() == 'fever' || newData.child('type').val() == 'symptom')"
           }
         },
-
         "milestone": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts','label'])
-              && newData.child('label').isString()
-              && newData.child('label').val().length <= 100"
+            ".validate": "newData.hasChildren(['id','childId','ts','label']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('label').isString() && newData.child('label').val().length <= 100"
           }
         },
-
         "appointment": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts','title'])
-              && newData.child('title').isString()
-              && newData.child('title').val().length >= 1
-              && newData.child('title').val().length <= 100
-              && newData.child('ts').isNumber()"
+            ".validate": "newData.hasChildren(['id','childId','ts','title']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('title').isString() && newData.child('title').val().length >= 1 && newData.child('title').val().length <= 100 && newData.child('ts').isNumber()"
           }
         },
-
         "meal": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts'])"
+            ".validate": "newData.hasChildren(['id','childId','ts']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString()"
           }
         },
-
         "tagesplan": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['id','childId','ts','label'])
-              && newData.child('label').isString()
-              && newData.child('label').val().length <= 100"
+            ".validate": "newData.hasChildren(['id','childId','ts','label']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('childId').isString() && newData.child('label').isString() && newData.child('label').val().length <= 100"
+          }
+        },
+        "tombstones": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['id','familyId','deletedAt']) && newData.child('id').val() == $entryId && newData.child('id').isString() && newData.child('familyId').val() == $familyId && newData.child('deletedAt').isNumber()"
           }
         }
       }
     },
-
     "members": {
       "$uid": {
-        ".read":  "auth != null && auth.uid == $uid",
+        ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && auth.uid == $uid",
-        ".validate": "newData.hasChildren(['familyId'])
-          && newData.child('familyId').isString()
-          && newData.child('familyId').val().length >= 8"
+        ".validate": "newData.hasChildren(['familyId']) && newData.child('familyId').isString() && newData.child('familyId').val().length >= 8"
       }
     },
-
     "$other": {
-      ".read":  false,
+      ".read": false,
       ".write": false
     }
   }

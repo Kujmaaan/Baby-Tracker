@@ -742,17 +742,28 @@ window.restoreJSON = function() {
       let data;
       try { data = JSON.parse(text); } catch { showToast(t('toast.json_invalid'), 'error'); return; }
 
-      // 1. Security validation
-      const { ok, errors } = validateImport(data, file.size);
+      // 1. Security validation — full validation of all entries
+      const { ok, errors, summary } = validateImport(data, file.size);
       if (!ok) {
         showToast(t('toast.backup_invalid', { reason: errors[0] }), 'error');
         return;
       }
+      // Warn about partial invalidity even when overall ok (< 5% invalid)
+      if (summary.warnings.length > 0 || summary.totalInvalid > 0) {
+        console.warn('[Restore] Import warnings:', summary.warnings, 'invalid:', summary.totalInvalid);
+        if (summary.totalInvalid > 0) {
+          showToast(
+            `⚠️ ${summary.totalInvalid} ungültige Einträge werden übersprungen.`,
+            'warning'
+          );
+        }
+      }
 
       // 2. Preview diff — show what will change
       const preview = await previewRestore(data);
-      window._restoreData = data; // stash for modal confirm
-      showRestorePreviewModal(preview);
+      window._restoreData    = data;    // stash for modal confirm
+      window._importSummary  = summary; // stash for modal display
+      showRestorePreviewModal(preview, summary);
     } catch (err) {
       showToast(t('toast.error', { message: err.message }), 'error');
     }
@@ -760,12 +771,24 @@ window.restoreJSON = function() {
   inp.click();
 };
 
-function showRestorePreviewModal(preview) {
+function showRestorePreviewModal(preview, importSummary) {
   const warnings = preview.warnings.map(w => `<p class="restore-warning">${w}</p>`).join('');
   const stats = preview.storeStats
     .filter(s => s.inBackup > 0 || s.inDB > 0)
     .map(s => `<tr><td>${s.store}</td><td>${s.inDB}</td><td>${s.inBackup}</td><td class="text-green">+${s.new}</td><td class="text-yellow">${s.conflicts}</td></tr>`)
     .join('');
+
+  // Import summary: valid / invalid / skipped counts from validateImport()
+  const hasInvalid = importSummary?.totalInvalid > 0;
+  const summaryHtml = importSummary ? `
+    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.25rem">
+      <strong>Validierung:</strong>
+      ✅ ${importSummary.totalValid} gültig
+      ${hasInvalid ? `· ⚠️ ${importSummary.totalInvalid} ungültig (werden übersprungen)` : ''}
+      · 📦 ${importSummary.totalEntries} gesamt
+    </p>
+    ${importSummary.warnings.map(w => `<p style="font-size:.75rem;color:var(--warning,#b45309)">⚠️ ${w}</p>`).join('')}
+  ` : '';
 
   const html = `
     <div id="restore-preview-modal" class="modal-overlay" role="dialog" aria-modal="true">
@@ -773,6 +796,7 @@ function showRestorePreviewModal(preview) {
         <h3>📦 Backup-Vorschau</h3>
         ${warnings}
         <p>Backup-Datum: <strong>${preview.exportedAt ? new Date(preview.exportedAt).toLocaleString('de-DE') : 'Unbekannt'}</strong></p>
+        ${summaryHtml}
         <table class="restore-table" style="width:100%;font-size:.8rem;margin:.75rem 0">
           <thead><tr><th>Store</th><th>Aktuell</th><th>Backup</th><th>Neu</th><th>Konflikte</th></tr></thead>
           <tbody>${stats}</tbody>
@@ -1291,10 +1315,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    // Navigate to page when notification is clicked (SW sends NAVIGATE message)
+    // Handle messages from the Service Worker
     navigator.serviceWorker.addEventListener('message', async event => {
-      if (event.data?.type === 'NAVIGATE' && event.data.page) {
+      const type = event.data?.type;
+
+      if (type === 'NAVIGATE' && event.data.page) {
+        // Navigate to page when notification is clicked
         await showPage(event.data.page);
+        return;
+      }
+
+      if (type === 'SW_ACTIVATED') {
+        // New SW has activated — reload to pick up updated JS/CSS modules.
+        // Small delay so the SW fully settles and cache is populated.
+        console.info('[SW] New version activated, reloading…', event.data?.version);
+        setTimeout(() => window.location.reload(), 300);
+        return;
       }
     });
   }

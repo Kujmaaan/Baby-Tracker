@@ -109,9 +109,14 @@ export function runMigrations(db, tx, oldVersion, newVersion) {
         MIGRATIONS[v](db, tx);
         console.info(`[DB] Migration v${v} complete`);
       } catch (err) {
-        console.error(`[DB] Migration v${v} FAILED:`, err);
-        // tx.abort() would prevent data corruption but lose the upgrade
-        // Log and continue — partial migration is better than no migration
+        console.error(`[DB] Migration v${v} FAILED — aborting upgrade:`, err);
+        // Wrap and re-throw so the caller (openDB onupgradeneeded) can:
+        //   1. call tx.abort() to roll back all changes
+        //   2. surface a Recovery UI instead of starting with a broken schema
+        const wrapped = new Error(`DB migration v${v} failed: ${err.message}`);
+        wrapped.migrationVersion = v;
+        wrapped.cause = err;
+        throw wrapped;
       }
     }
   }

@@ -65,80 +65,151 @@ const STORE_ENTRY_SCHEMA = {
   config:      { required: [], ts: false },
 };
 
+// Known top-level keys in a valid backup — anything else is an unknown key warning
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  'version', 'exportedAt', 'deviceId', 'familyId', 'appVersion',
+  ...Object.keys(STORE_ENTRY_SCHEMA),
+]);
+
+/**
+ * Validate a single store entry against its schema.
+ * Returns a string describing the problem, or null if valid.
+ * @param {unknown} entry
+ * @param {number}  i         index in the store array
+ * @param {string}  store     store name (for error messages)
+ * @param {object}  schema    { required: string[], ts: boolean }
+ * @returns {string|null}
+ */
+function validateStoreEntry(entry, i, store, schema) {
+  if (!entry || typeof entry !== 'object') return `${store}[${i}]: kein Objekt`;
+  for (const field of schema.required) {
+    if (!(field in entry)) return `${store}[${i}]: Pflichtfeld "${field}" fehlt`;
+  }
+  if (schema.ts) {
+    const ts = Number(entry.ts);
+    if (isNaN(ts) || ts < 0 || ts > 9_999_999_999_999) {
+      return `${store}[${i}]: Ungültiger Timestamp`;
+    }
+  }
+  if (entry.id !== undefined && typeof entry.id !== 'string') {
+    return `${store}[${i}]: id muss ein String sein`;
+  }
+  if (entry.childId !== undefined && typeof entry.childId !== 'string') {
+    return `${store}[${i}]: childId muss ein String sein`;
+  }
+  return null;
+}
+
 /**
  * Validate a JSON backup object before importing.
+ * Performs full validation of ALL entries (not just a sample).
+ *
  * @param {unknown} data
- * @param {number} fileSizeBytes
- * @returns {{ ok: boolean, errors: string[] }}
+ * @param {number}  fileSizeBytes
+ * @returns {{
+ *   ok:      boolean,
+ *   errors:  string[],
+ *   summary: {
+ *     totalEntries: number,
+ *     totalValid:   number,
+ *     totalInvalid: number,
+ *     warnings:     string[],
+ *     perStore:     Array<{store:string, valid:number, invalid:number, skipped:number}>
+ *   }
+ * }}
  */
 export function validateImport(data, fileSizeBytes = 0) {
-  const errors = [];
+  const errors   = [];
+  const warnings = [];
+  const perStore = [];
+  let totalEntries = 0;
+  let totalValid   = 0;
+  let totalInvalid = 0;
 
-  // Size check
+  const fatal = (msg) => { errors.push(msg); };
+  const makeSummary = () => ({
+    totalEntries, totalValid, totalInvalid, warnings, perStore,
+  });
+
+  // ── Size check ──────────────────────────────────────────────────────────────
   if (fileSizeBytes > MAX_IMPORT_SIZE_MB * 1024 * 1024) {
-    errors.push(`Datei zu groß (max ${MAX_IMPORT_SIZE_MB} MB).`);
-    return { ok: false, errors };
+    fatal(`Datei zu groß (max ${MAX_IMPORT_SIZE_MB} MB).`);
+    return { ok: false, errors, summary: makeSummary() };
   }
 
-  // Must be plain object
+  // ── Structural check ────────────────────────────────────────────────────────
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    errors.push('Ungültiges Backup-Format — kein JSON-Objekt.');
-    return { ok: false, errors };
+    fatal('Ungültiges Backup-Format — kein JSON-Objekt.');
+    return { ok: false, errors, summary: makeSummary() };
   }
 
-  // Version check
+  // ── Version check ───────────────────────────────────────────────────────────
   if (data.version !== undefined && typeof data.version !== 'number') {
-    errors.push('Ungültige Backup-Version.');
+    fatal('Ungültige Backup-Version.');
   }
 
-  // Validate each store
+  // ── Unknown top-level keys → warnings (not fatal) ───────────────────────────
+  for (const key of Object.keys(data)) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key)) {
+      warnings.push(`Unbekannter Top-Level-Key ignoriert: "${key}"`);
+    }
+  }
+
+  // ── Per-store validation ────────────────────────────────────────────────────
   for (const [store, schema] of Object.entries(STORE_ENTRY_SCHEMA)) {
-    if (!(store in data)) continue; // missing store is OK (partial restore)
+    if (!(store in data)) continue; // partial restore OK
+
     const entries = data[store];
-    if (store === 'config') continue; // config is a key-value map, skip array checks
+
+    if (store === 'config') continue; // key-value map, not array
 
     if (!Array.isArray(entries)) {
-      errors.push(`Store "${store}" ist kein Array.`);
+      fatal(`Store "${store}" ist kein Array.`);
       continue;
     }
     if (entries.length > MAX_ENTRIES_PER_STORE) {
-      errors.push(`Store "${store}" hat zu viele Einträge (max ${MAX_ENTRIES_PER_STORE}).`);
+      fatal(`Store "${store}" hat zu viele Einträge (${entries.length} > ${MAX_ENTRIES_PER_STORE}).`);
+      perStore.push({ store, valid: 0, invalid: 0, skipped: entries.length });
       continue;
     }
 
-    // Validate first 100 entries as a sample
-    const sample = entries.slice(0, 100);
-    for (const [i, entry] of sample.entries()) {
-      if (!entry || typeof entry !== 'object') {
-        errors.push(`${store}[${i}]: kein Objekt.`); continue;
-      }
-      for (const field of schema.required) {
-        if (!(field in entry)) {
-          errors.push(`${store}[${i}]: Pflichtfeld "${field}" fehlt.`); break;
+    // Full validation of ALL entries
+    let storeValid   = 0;
+    let storeInvalid = 0;
+    const ERROR_CAP  = 20; // keep error list readable
+
+    for (let i = 0; i < entries.length; i++) {
+      const problem = validateStoreEntry(entries[i], i, store, schema);
+      if (problem === null) {
+        storeValid++;
+      } else {
+        storeInvalid++;
+        if (errors.length < ERROR_CAP) errors.push(problem);
+        else if (errors.length === ERROR_CAP) {
+          errors.push('...weitere Fehler unterdrückt (max 20 angezeigt).');
         }
-      }
-      if (schema.ts && entry.ts !== undefined) {
-        const ts = Number(entry.ts);
-        if (isNaN(ts) || ts < 0 || ts > 9_999_999_999_999) {
-          errors.push(`${store}[${i}]: Ungültiger Timestamp.`); 
-        }
-      }
-      // id must be string
-      if (entry.id !== undefined && typeof entry.id !== 'string') {
-        errors.push(`${store}[${i}]: id muss ein String sein.`);
-      }
-      // childId must be string if present
-      if (entry.childId !== undefined && typeof entry.childId !== 'string') {
-        errors.push(`${store}[${i}]: childId muss ein String sein.`);
       }
     }
-    if (errors.length > 10) {
-      errors.push('...weitere Fehler unterdrückt. Backup scheint beschädigt.');
-      break;
+
+    totalEntries += entries.length;
+    totalValid   += storeValid;
+    totalInvalid += storeInvalid;
+    perStore.push({ store, valid: storeValid, invalid: storeInvalid, skipped: 0 });
+  }
+
+  // ── Overall invalid rate check ──────────────────────────────────────────────
+  if (totalEntries > 0 && totalInvalid > 0) {
+    const rate = totalInvalid / totalEntries;
+    if (rate > 0.05) {
+      // > 5% invalid entries → fatal: do not silently import corrupt data
+      fatal(`Zu viele ungültige Einträge (${totalInvalid}/${totalEntries}, ${Math.round(rate * 100)}%). Backup möglicherweise beschädigt.`);
+    } else {
+      warnings.push(`${totalInvalid} von ${totalEntries} Einträgen ungültig — werden beim Import übersprungen.`);
     }
   }
 
-  return { ok: errors.length === 0, errors };
+  const ok = errors.length === 0;
+  return { ok, errors, summary: makeSummary() };
 }
 
 // ── Input length constraints ──────────────────────────────────────────────────

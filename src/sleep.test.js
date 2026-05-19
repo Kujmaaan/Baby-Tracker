@@ -203,6 +203,144 @@ group('validateSleepEntry edge cases', () => {
   assert('over-max-duration: invalid', validateSleepEntry(overMax).errors.length > 0);
 });
 
+
+// ── 6. isValidQueueItem ───────────────────────────────────────────────────────
+
+// Inline the validator here (no dynamic import needed for unit tests)
+const VALID_OPS_T      = new Set(['put', 'delete']);
+const VALID_STATUSES_T = new Set(['pending', 'failed', 'quarantined']);
+const MAX_QUEUE_AGE_MS_T = 30 * 24 * 60 * 60 * 1000;
+function isValidQueueItem(item) {
+  if (!item || typeof item !== 'object')           return 'not an object';
+  if (!item.qid  || typeof item.qid  !== 'string') return 'missing qid';
+  if (!VALID_OPS_T.has(item.op))                   return `invalid op: ${item.op}`;
+  if (!item.path || typeof item.path !== 'string') return 'missing path';
+  if (typeof item.createdAt !== 'number')          return 'invalid createdAt';
+  if (typeof item.attempts  !== 'number')          return 'invalid attempts';
+  if (item.status && !VALID_STATUSES_T.has(item.status)) return `invalid status: ${item.status}`;
+  if (item.op === 'put' && (item.data === undefined || item.data === null))
+                                                   return 'put requires data';
+  if (Date.now() - item.createdAt > MAX_QUEUE_AGE_MS_T) return 'item too old (>30d)';
+  return null;
+}
+
+group('isValidQueueItem', () => {
+  const base = { qid: 'q1', op: 'put', path: 'families/f1/sleep/s1',
+                 data: { id: 's1' }, status: 'pending',
+                 createdAt: Date.now(), attempts: 0 };
+
+  assert('valid put item: null (no error)',
+    isValidQueueItem(base) === null);
+
+  assert('valid delete item (no data): null',
+    isValidQueueItem({ ...base, op: 'delete', data: null }) === null);
+
+  assert('missing qid: error',
+    isValidQueueItem({ ...base, qid: '' }) !== null);
+
+  assert('invalid op (storeName): error',
+    isValidQueueItem({ ...base, op: 'storeName' }) !== null);
+
+  assert('put without data: error',
+    isValidQueueItem({ ...base, data: null }) !== null);
+
+  assert('delete without data: valid (data optional)',
+    isValidQueueItem({ ...base, op: 'delete', data: undefined }) === null);
+
+  assert('missing path: error',
+    isValidQueueItem({ ...base, path: '' }) !== null);
+
+  assert('invalid createdAt: error',
+    isValidQueueItem({ ...base, createdAt: 'yesterday' }) !== null);
+
+  assert('invalid attempts: error',
+    isValidQueueItem({ ...base, attempts: '3' }) !== null);
+
+  assert('invalid status: error',
+    isValidQueueItem({ ...base, status: 'corrupt' }) !== null);
+
+  assert('age > 30 days: error',
+    isValidQueueItem({ ...base, createdAt: Date.now() - (31 * 24 * 60 * 60 * 1000) }) !== null);
+
+  assert('null input: error',
+    isValidQueueItem(null) !== null);
+
+  assert('array input: error',
+    isValidQueueItem([]) !== null);
+});
+
+
+// ── 7. runMigrations fail-fast ────────────────────────────────────────────────
+
+// Inline the key behaviour of runMigrations for pure-JS testing
+function runMigrationsTest(migrations, oldVersion, newVersion) {
+  const log = [];
+  for (let v = oldVersion + 1; v <= newVersion; v++) {
+    if (migrations[v]) {
+      try {
+        migrations[v]();
+        log.push({ v, ok: true });
+      } catch (err) {
+        const wrapped = new Error(`DB migration v${v} failed: ${err.message}`);
+        wrapped.migrationVersion = v;
+        wrapped.cause = err;
+        throw wrapped;
+      }
+    }
+  }
+  return log;
+}
+
+group('runMigrations fail-fast', () => {
+  // All-good migrations should complete silently
+  assert('all-ok migrations run without throwing', (() => {
+    try {
+      const log = runMigrationsTest({ 2: () => {}, 3: () => {} }, 1, 3);
+      return log.length === 2;
+    } catch { return false; }
+  })());
+
+  // A failing migration should throw immediately
+  assert('failing migration throws', (() => {
+    try {
+      runMigrationsTest({ 2: () => { throw new Error('index error'); } }, 1, 2);
+      return false; // should not reach here
+    } catch (e) {
+      return e.message.includes('migration v2 failed');
+    }
+  })());
+
+  // migrationVersion is set on the thrown error
+  assert('thrown error carries migrationVersion', (() => {
+    try {
+      runMigrationsTest({ 2: () => { throw new Error('oops'); } }, 1, 2);
+      return false;
+    } catch (e) {
+      return e.migrationVersion === 2;
+    }
+  })());
+
+  // No subsequent migration runs after a failure (fail-fast)
+  assert('no migration runs after failure (fail-fast)', (() => {
+    let ran3 = false;
+    try {
+      runMigrationsTest({
+        2: () => { throw new Error('v2 broken'); },
+        3: () => { ran3 = true; },
+      }, 1, 3);
+    } catch { /* expected */ }
+    return ran3 === false;
+  })());
+
+  // Skipped versions are silently ignored
+  assert('missing migration version is skipped', (() => {
+    try {
+      const log = runMigrationsTest({ 3: () => {} }, 1, 3);
+      return log.length === 1 && log[0].v === 3;
+    } catch { return false; }
+  })());
+});
+
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 const total = passed + failed;

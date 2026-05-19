@@ -50,23 +50,37 @@ const FONT_PATTERNS = [
 
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {
+  // Do NOT call self.skipWaiting() here — that would immediately replace the
+  // old SW while existing tabs still run the old app.js / i18n.js / etc.,
+  // causing a version-mix.  The new SW waits until all tabs are on the new
+  // version (or the user explicitly triggers SKIP_WAITING from the update
+  // banner in app.js).
   e.waitUntil(
     caches.open(CACHE_VER)
       .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+      .catch(err => console.error('[SW] APP_SHELL pre-cache failed:', err))
   );
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(k => k !== CACHE_VER && k !== FONT_CACHE)
-          .map(k => caches.delete(k))
+    caches.keys()
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(k => k !== CACHE_VER && k !== FONT_CACHE)
+            .map(k => caches.delete(k))
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
+      .then(() => {
+        // Notify all open tabs that a new SW has activated so they can
+        // reload to pick up the new JS/CSS — prevents version-mix.
+        return self.clients.matchAll({ type: 'window' }).then(clients =>
+          clients.forEach(c => c.postMessage({ type: 'SW_ACTIVATED', version: CACHE_VER }))
+        );
+      })
   );
 });
 
