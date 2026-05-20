@@ -1013,7 +1013,7 @@ body.is-offline nav.bottom-nav { top: 1.6rem; }
   padding: .65rem 1.25rem;
   font-size: .85rem;
   font-weight: 600;
-  z-index: 9995;
+  z-index: 7000; /* below onboarding overlay (z-8000/10000) */
   display: flex;
   align-items: center;
   gap: .75rem;
