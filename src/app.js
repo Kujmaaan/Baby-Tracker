@@ -939,10 +939,18 @@ function showUpdateBanner() {
 window.reloadSW = () => window.location.reload();
 
 // ── Onboarding ────────────────────────────────────────────────────────────────
-function showOnboarding() { $('ob-guide-overlay')?.classList.remove('hidden'); }
+function showOnboarding() {
+  const el = $('ob-guide-overlay');
+  if (!el) return;
+  el.classList.remove('hidden');
+  // Must add .visible to trigger opacity:1 — without it the overlay stays at
+  // opacity:0 (invisible) but still intercepts all pointer-events → frozen UI
+  requestAnimationFrame(() => el.classList.add('visible'));
+}
 window.finishOnboard = async function() {
   await setOnboarded();
-  $('ob-guide-overlay')?.classList.add('hidden');
+  const el = $('ob-guide-overlay');
+  if (el) { el.classList.remove('visible'); el.classList.add('hidden'); }
 };
 
 // ── Utility UI ────────────────────────────────────────────────────────────────
