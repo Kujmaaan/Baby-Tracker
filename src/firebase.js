@@ -67,8 +67,15 @@ export async function initFB(overrideConfig = null) {
     _db   = firebase.database();
     _auth = firebase.auth();
 
-    // Sign in anonymously so RTDB rules can filter by uid
-    await _auth.signInAnonymously();
+    // Sign in anonymously so RTDB rules can filter by uid.
+    // 10 s timeout: if Firebase doesn't respond, fall through to offline mode
+    // so the UI is never permanently blocked.
+    await Promise.race([
+      _auth.signInAnonymously(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('auth/timeout')), 10_000)
+      ),
+    ]);
     _auth.onAuthStateChanged(user => { fbUser = user; });
 
     fbReady = true;
