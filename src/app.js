@@ -85,7 +85,7 @@ async function boot() {
   document.documentElement.lang = getLanguage();
   applyI18n();
 
-  // 4. Firebase (non-blocking)
+  // 4. Firebase (non-blocking) — failure must never block the UI
   showFbLoading();
   initFB().then(ok => {
     if (ok) initAppCheck().catch(console.warn);
@@ -94,8 +94,15 @@ async function boot() {
       getFamilyId().then(fid => {
         fbRegisterMember(fid);
         syncUp();
-      });
+      }).catch(err => console.warn('[FB] Post-init setup failed:', err));
+    } else {
+      console.warn('[FB] Firebase unavailable — running offline-only. Sync disabled.');
     }
+  }).catch(err => {
+    // Safety net: should never reach here since initFB() catches internally,
+    // but prevents any uncaught promise rejection from breaking the app.
+    hideFbLoading();
+    console.error('[FB] Unexpected init error:', err);
   });
 
   // 5. Service Worker
