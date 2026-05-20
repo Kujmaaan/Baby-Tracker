@@ -75,6 +75,16 @@ async function boot() {
   await openDB();
   await initSyncRevision(); // restore syncRevision from IDB if localStorage was cleared
 
+  // 1.5. Request persistent storage -- prevents silent IDB eviction on iOS Safari.
+  //      Chrome: granted silently. iOS Safari: not supported (returns false).
+  //      Non-blocking -- failure must never delay the UI.
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().then(granted => {
+      if (!granted) console.warn('[App] Persistent storage not granted -- IDB may be evicted on iOS.');
+      else console.info('[App] Persistent storage granted.');
+    }).catch(console.warn);
+  }
+
   // 2. Config
   cfg = await loadCfg();
   activeChild = await getActiveChild();
