@@ -457,8 +457,9 @@ input[type=number],input[type=text],input[type=date],select{min-height:44px;font
   position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.7);
   display:flex;align-items:center;justify-content:center;
   padding:1.5rem;opacity:0;transition:opacity .3s;
+  pointer-events:none; /* safety: invisible overlay must not block clicks */
 }
-#ob-guide-overlay.visible{opacity:1;}
+#ob-guide-overlay.visible{opacity:1;pointer-events:auto;}
 #ob-guide-overlay.hidden{display:none;}
 .ob-guide-modal{
   background:var(--surface);border-radius:var(--radius-xl);
@@ -1063,5 +1064,3 @@ button:active, .log-item button:active {
 
 /* Print: hide nav for any print scenarios */
 @media print {
-  nav, .tab-bar, #toast, #sw-update-banner, .offline-indicator { display: none !important; }
-}
