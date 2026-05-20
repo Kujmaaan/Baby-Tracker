@@ -950,6 +950,10 @@ function hideFbLoading() { $('fb-loading')?.classList.add('hidden'); }
 
 // ── SW update banner ──────────────────────────────────────────────────────────
 function showUpdateBanner() {
+  // Don't surface update banner while onboarding is active -- it would
+  // confuse new users before they finish first-run setup.
+  const ob = document.getElementById('ob-guide-overlay');
+  if (ob && !ob.classList.contains('hidden')) return;
   const b = $('update-banner');
   if (b) b.classList.remove('hidden');
 }
@@ -959,6 +963,9 @@ window.reloadSW = () => window.location.reload();
 function showOnboarding() {
   const el = $('ob-guide-overlay');
   if (!el) return;
+  // Raise above SW update banners (z-index 9995) so the onboarding is never
+  // obscured by an update notification on small phone screens.
+  el.style.zIndex = '10000';
   el.classList.remove('hidden');
   // Must add .visible to trigger opacity:1 — without it the overlay stays at
   // opacity:0 (invisible) but still intercepts all pointer-events → frozen UI
@@ -1352,7 +1359,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (type === 'SW_ACTIVATED') {
         // New SW has activated — reload to pick up updated JS/CSS modules.
-        // Small delay so the SW fully settles and cache is populated.
+        // Skip auto-reload if onboarding is in progress: reloading mid-setup
+        // would reset the user back to the same screen in a perceived loop.
+        const ob = document.getElementById('ob-guide-overlay');
+        if (ob && !ob.classList.contains('hidden')) {
+          console.info('[SW] New version activated but onboarding in progress -- skipping auto-reload.');
+          return;
+        }
         console.info('[SW] New version activated, reloading…', event.data?.version);
         setTimeout(() => window.location.reload(), 300);
         return;
