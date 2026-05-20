@@ -1,11 +1,11 @@
-// ─── Service Worker v28 — baby-tracker ───────────────────────────────────────
+// ─── Service Worker v29 — baby-tracker ───────────────────────────────────────
 // Strategy:
 //   • App shell (HTML/JS/CSS/manifest) → Network-first, fallback to cache
 //   • Google Fonts                     → Cache-first (immutable)
 //   • Firebase domains                 → Network-only (no caching)
 //   • Offline fallback                 → /index.html from cache
 
-const CACHE_VER   = 'baby-tracker-v33';
+const CACHE_VER   = 'baby-tracker-v34';
 const FONT_CACHE  = 'bt-fonts-v2';
 
 const APP_SHELL = [
@@ -111,12 +111,28 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // App shell → network first, fallback to cache
+  // App shell → network first with HTTP-cache bypass, fallback to SW cache.
+  // cache:'no-cache' ensures the browser re-validates with the server every
+  // time, so fixes and updates propagate immediately without waiting for
+  // HTTP Cache-Control expiry or a full SW update cycle.
+  const isAppShell = APP_SHELL.some(entry => {
+    const entryPath = entry.replace(/^\.\//, '/');
+    try {
+      const reqPath = new URL(e.request.url).pathname;
+      return reqPath === entryPath || reqPath.endsWith(entryPath);
+    } catch { return false; }
+  });
+
+  const networkReq = isAppShell
+    ? new Request(e.request, { cache: 'no-cache' })
+    : e.request;
+
   e.respondWith(
-    fetch(e.request)
+    fetch(networkReq)
       .then(res => {
         if (res.ok) {
           const clone = res.clone();
+          // Always store under the original request URL (not the no-cache variant)
           caches.open(CACHE_VER).then(c => c.put(e.request, clone));
         }
         return res;

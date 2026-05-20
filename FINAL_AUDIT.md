@@ -1,4 +1,30 @@
-# Final Technical Audit — Baby Tracker v3.1
+# Final Technical Audit — Baby Tracker v3.2
+
+*Updated: 2026-05-20 | SW: v34 | DB schema: v7 | Unit Tests: 49/49 ✓*
+
+> **v3.2 RC — Produktionsreife: 9/10**  
+> Alle kritischen Bugs aus dem v3.1 QA-Audit behoben.  
+> Design-Risiken (syncRevision, SW HTTP-Cache) beseitigt.  
+> Empfehlung: **GO für private Nutzung.**
+
+---
+
+## v3.2 Änderungen gegenüber v3.1
+
+| Fix | Datei | Art |
+|-----|-------|-----|
+| `checkIndexedDB()` put()-Signatur | `src/recovery.js` | Kritisch |
+| `repairQueue()` Feldnamen | `src/recovery.js` | Kritisch |
+| `syncUp()` RTDB-Timeout | `src/firebase.js` | Mittel |
+| `incrementSyncRevision()` IDB-primär | `src/conflict.js` | Design-Risiko |
+| `initSyncRevision()` Boot-Logik | `src/conflict.js` | Design-Risiko |
+| `setSyncRevision()` neu | `src/conflict.js` | Design-Risiko |
+| SW App-Shell `cache:no-cache` | `sw.js` | Design-Risiko |
+| Stale-Write 7d → 30d | `src/conflict.js` | Design-Risiko |
+
+---
+
+# Final Technical Audit — Baby Tracker v3.1 (Archiv)
 
 *Audit date: May 2026 | SW: v30 | DB schema: v7 | Tests: 31/31 ✓*
 

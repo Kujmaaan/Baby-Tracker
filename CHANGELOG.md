@@ -5,6 +5,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [3.2.0] — 2026-05-20 (Release Candidate — Final Hardening)
+
+### Fixed — Critical Bugs (v3.1 QA Audit)
+- `src/recovery.js` — `checkIndexedDB()`: config store uses out-of-line keys;
+  `put(value, key)` signature was wrong → health check always returned `ok: false`
+- `src/recovery.js` — `repairQueue()`: validation checked non-existent fields
+  (`id`, `storeName`, `payload`) instead of actual schema (`qid`, `op`, `path`);
+  all valid queue items were quarantined → silent Firebase sync data loss
+- `src/firebase.js` — `syncUp()`: `_db.ref().once('value')` had no timeout;
+  indefinite hang on RTDB access denial; replaced with `Promise.race()` + 8 s limit
+
+### Fixed — Design Risks
+- `src/conflict.js` — `incrementSyncRevision()` is now `async`; IDB is written
+  first (awaited) before localStorage is updated; eliminates revision loss on
+  tab-close between fire-and-forget IDB write and next read
+- `src/conflict.js` — `initSyncRevision()` boot logic: IDB is now the
+  authoritative source; localStorage is promoted to IDB on Privacy-Clear recovery;
+  no silent reset to 0 when a higher value exists in either store
+- `src/conflict.js` — add `setSyncRevision(value)`: async helper, IDB first
+- `src/firebase.js` — `syncUp()`: `incrementSyncRevision()` is now properly
+  awaited before stamping `syncRevision` onto the payload
+- `sw.js` — App-shell fetch now uses `cache: 'no-cache'`; browser HTTP cache
+  no longer delays delivery of JS/CSS fixes to existing users
+
+### Fixed — Thresholds
+- `src/conflict.js` — stale-write timestamp threshold: 7 days → 30 days;
+  prevents silent discard of offline edits for users on vacation / parental leave
+
+### Service Worker
+- v33 → v34; `CACHE_VER = 'baby-tracker-v34'`; old caches purged on activate
+
+---
+
 ## [3.1.0] — 2026-05-17 (Production Stabilization)
 
 ### Performance
