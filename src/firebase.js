@@ -5,7 +5,7 @@
 import { enqueueSync, getPendingQueue, dequeueSync, failQueueItem } from './storage.js';
 import { uid } from './helpers.js';
 import { resolveConflict, logConflict, isSyncLoop, showConflictNotification,
-         newOperationId, incrementSyncRevision } from './conflict.js';
+         newOperationId, incrementSyncRevision, setSyncRevision } from './conflict.js';
 
 // ── Firebase Config ───────────────────────────────────────────────────────────
 // The API key below is intentionally public. Firebase web API keys are client
@@ -251,9 +251,10 @@ export async function syncUp() {
           }
 
           // Stamp syncRevision + operationId onto the data
+          const nextRevision = await incrementSyncRevision(); // IDB written first
           const payload = {
             ...item.data,
-            syncRevision: incrementSyncRevision(),
+            syncRevision: nextRevision,
             operationId:  item.operationId || newOperationId(),
           };
           await _db.ref(item.path).set(payload);

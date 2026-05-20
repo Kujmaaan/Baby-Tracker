@@ -47,7 +47,9 @@ export function opIdTimestamp(opId = '') {
 // ── Sync Revision ─────────────────────────────────────────────────────────────
 
 /**
- * Get the current local sync revision (monotonic counter).
+ * Get the current local sync revision.
+ * Reads from localStorage, which is always pre-loaded from IDB by initSyncRevision()
+ * on boot. getSyncRevision() must not be called before initSyncRevision() resolves.
  * @returns {number}
  */
 export function getSyncRevision() {
@@ -56,29 +58,64 @@ export function getSyncRevision() {
 
 /**
  * Increment and return the new sync revision.
- * @returns {number}
+ * IDB is written first (awaited); localStorage is then updated as a cache.
+ * Callers must await this function.
+ * @returns {Promise<number>}
  */
-export function incrementSyncRevision() {
+export async function incrementSyncRevision() {
   const next = getSyncRevision() + 1;
-  localStorage.setItem(SYNC_REVISION_KEY, String(next));
-  // Async IDB backup — fire-and-forget so callers stay synchronous
-  cfgSet(SYNC_REVISION_KEY, next).catch(() => {});
+  try {
+    await cfgSet(SYNC_REVISION_KEY, next); // IDB first — primary source
+  } catch { /* IDB unavailable — localStorage fallback below */ }
+  localStorage.setItem(SYNC_REVISION_KEY, String(next)); // mirror to localStorage cache
   return next;
 }
 
 /**
- * Initialise syncRevision from IDB on boot.
- * Recovers the correct value if localStorage was cleared.
- * Call once during app startup (before first syncUp).
+ * Explicitly set the sync revision (e.g. after remote reconciliation).
+ * IDB is written first (awaited); localStorage is then updated as a cache.
+ * @param {number} value
+ * @returns {Promise<number>}
+ */
+export async function setSyncRevision(value) {
+  const n = Math.max(0, parseInt(value, 10) || 0);
+  try {
+    await cfgSet(SYNC_REVISION_KEY, n); // IDB first
+  } catch { /* IDB unavailable — localStorage fallback below */ }
+  localStorage.setItem(SYNC_REVISION_KEY, String(n));
+  return n;
+}
+
+/**
+ * Initialise syncRevision from IDB on boot — IDB is the authoritative source.
+ *
+ * Boot logic:
+ *  - IDB has value  →  use max(IDB, localStorage), update localStorage
+ *  - IDB missing    →  promote localStorage value to IDB (recovery path)
+ *  - both 0/missing →  no-op (fresh install)
+ *  - IDB error      →  localStorage fallback remains in effect (silent)
+ *
+ * Must be called (and awaited) before any getSyncRevision() or syncUp() call.
  */
 export async function initSyncRevision() {
   try {
     const idbRev = await cfgGet(SYNC_REVISION_KEY, 0);
     const lsRev  = parseInt(localStorage.getItem(SYNC_REVISION_KEY) || '0', 10);
-    const max    = Math.max(idbRev || 0, lsRev);
-    if (max !== lsRev) localStorage.setItem(SYNC_REVISION_KEY, String(max));
-    if (max !== (idbRev || 0)) await cfgSet(SYNC_REVISION_KEY, max);
-  } catch {}
+
+    if ((idbRev || 0) > 0) {
+      // IDB has a value — it is authoritative
+      const max = Math.max(idbRev, lsRev);
+      localStorage.setItem(SYNC_REVISION_KEY, String(max));   // keep localStorage in sync
+      if (max > idbRev) await cfgSet(SYNC_REVISION_KEY, max); // push higher LS value to IDB
+    } else if (lsRev > 0) {
+      // IDB was cleared (Privacy Clear) — promote localStorage value back to IDB
+      await cfgSet(SYNC_REVISION_KEY, lsRev);
+      // localStorage already correct — no update needed
+    }
+    // both 0 → fresh install or both cleared → no-op
+  } catch {
+    // IDB unavailable — localStorage fallback remains; getSyncRevision() still works
+  }
 }
 
 /**
