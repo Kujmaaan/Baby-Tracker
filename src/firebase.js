@@ -222,9 +222,12 @@ export async function syncUp() {
           // Conflict resolution: read remote before writing
           let remote = null;
           try {
-            const snap = await _db.ref(item.path).once('value');
+            const snap = await Promise.race([
+              _db.ref(item.path).once('value'),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('rtdb/timeout')), 8_000)),
+            ]);
             remote = snap.val();
-          } catch { /* offline — skip conflict check */ }
+          } catch { /* offline or timeout — skip conflict check */ }
 
           if (remote !== null) {
             const result = resolveConflict(item.data, remote, item);

@@ -20,7 +20,7 @@ export async function checkIndexedDB() {
       const tx  = db.transaction('config', 'readwrite');
       const st  = tx.objectStore('config');
       const key = '__health_probe__';
-      st.put({ key, value: Date.now() });
+      st.put(Date.now(), '__health_probe__'); // out-of-line key store requires key as 2nd arg
       tx.oncomplete = resolve;
       tx.onerror    = () => reject(tx.error);
     });
@@ -84,8 +84,8 @@ export async function repairQueue() {
   catch (err) { return { healthy: 0, invalid: 0, quarantined: 0, error: err.message }; }
 
   const invalid = queue.filter(item =>
-    !item.id || !item.storeName || !item.payload ||
-    (item.ts && now - item.ts > MAX_AGE_MS)
+    !item.qid || !item.op || !item.path ||          // correct field names for sync_queue schema
+    (item.createdAt && now - item.createdAt > MAX_AGE_MS)
   );
 
   if (invalid.length === 0) return { healthy: queue.length, invalid: 0, quarantined: 0 };
@@ -94,7 +94,7 @@ export async function repairQueue() {
   const quarantine = JSON.parse(localStorage.getItem(QUEUE_QUARANTINE_KEY) || '[]');
   for (const item of invalid) {
     quarantine.push({ ...item, quarantinedAt: now });
-    try { await dequeueSync(item.id); } catch {}
+    try { await dequeueSync(item.qid); } catch {}  // qid is the keyPath, not id
   }
   localStorage.setItem(QUEUE_QUARANTINE_KEY, JSON.stringify(quarantine.slice(-50)));
 
