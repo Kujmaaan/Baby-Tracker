@@ -191,3 +191,36 @@ window.addTagesplan = async function() {
   await window._addTagesplan?.({ timeStr, label });
   document.getElementById('tp-label').value = '';
 };
+
+// -- SW update banner guard ---------------------------------------------------
+// Watches #sw-update-banner via MutationObserver and suppresses it whenever
+// the onboarding overlay is active. Runs from ui-helpers.js which is served
+// network-first, so the guard takes effect immediately even when an old SW
+// version controls the page -- no SW activation required.
+(function () {
+  function installBannerGuard() {
+    const banner = document.getElementById('sw-update-banner');
+    const ob     = document.getElementById('ob-guide-overlay');
+    if (!banner || !ob) return;
+
+    new MutationObserver(function () {
+      // Banner became visible while onboarding is still running
+      if (!banner.hidden && !ob.classList.contains('hidden')) {
+        banner.hidden = true;
+        // Re-show banner after onboarding completes so user still gets notified
+        new MutationObserver(function (_, obs) {
+          if (ob.classList.contains('hidden')) {
+            banner.hidden = false;
+            obs.disconnect();
+          }
+        }).observe(ob, { attributes: true, attributeFilter: ['class', 'style'] });
+      }
+    }).observe(banner, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installBannerGuard);
+  } else {
+    installBannerGuard();
+  }
+}());
