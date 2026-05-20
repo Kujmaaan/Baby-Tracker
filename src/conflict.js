@@ -96,7 +96,7 @@ export function isStaleWrite(local, remote) {
   // Timestamp-based fallback: remote is significantly newer
   const localTs  = local.updatedAt  || 0;
   const remoteTs = remote.updatedAt || 0;
-  return remoteTs - localTs > 7 * 24 * 3600_000; // 7 days gap
+  return remoteTs - localTs > 30 * 24 * 3600_000; // 30 days — 7 days was too aggressive for vacation/parental-leave scenarios
 }
 
 // ── Conflict Resolution ───────────────────────────────────────────────────────
