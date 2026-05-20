@@ -1340,6 +1340,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newSW = reg.installing;
         newSW?.addEventListener('statechange', () => {
           if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // Don't show banner while onboarding is active -- it overlaps
+            // the overlay and blocks the Weiter button for new users.
+            const ob = document.getElementById('ob-guide-overlay');
+            if (ob && !ob.classList.contains('hidden')) return;
             const banner = document.getElementById('sw-update-banner');
             if (banner) banner.hidden = false;
           }
